@@ -25,8 +25,26 @@ import db, {
   getEmailCampaignById,
   getAllEmails,
   getEmailStats,
-  getEligibleLeadsForEmailOutreach
+  getEligibleLeadsForEmailOutreach,
+  createMeeting,
+  updateMeeting,
+  getMeetingById,
+  getMeetings,
+  getUpcomingMeetings,
+  getCalendarStats,
+  VALID_MEETING_STATUSES
 } from '../database/db.js';
+import {
+  generateGoogleMeetLink,
+  generateGoogleCalendarUrl,
+  generateIcsInvite,
+  getAvailableSlots,
+  formatTime12h,
+  computeEndTime
+} from '../calendar/googleCalendarService.js';
+import {
+  dispatchDualMeetingConfirmation
+} from '../calendar/meetingNotifier.js';
 import {
   sendEmail,
   verifySmtpConnection,
@@ -839,6 +857,196 @@ app.get('/api/email/eligible-leads', (req, res) => {
     res.json({ success: true, count: leads.length, leads });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================
+// AUTOMATIC MEETING SCHEDULING AGENT ENDPOINTS
+// ==========================================
+
+// 48. Calendar Stats & Metrics
+app.get('/api/calendar/stats', (req, res) => {
+  try {
+    const stats = getCalendarStats();
+    res.json({ success: true, stats, validStatuses: VALID_MEETING_STATUSES });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 49. Query Meetings with Filters & Pagination
+app.get('/api/calendar/meetings', (req, res) => {
+  try {
+    const { status, date, search, leadId, limit = 50, offset = 0 } = req.query;
+    const result = getMeetings(
+      {
+        status,
+        date,
+        search,
+        leadId: leadId ? parseInt(leadId, 10) : null
+      },
+      parseInt(limit, 10),
+      parseInt(offset, 10)
+    );
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 50. Upcoming Meetings
+app.get('/api/calendar/upcoming', (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit || 10, 10);
+    const meetings = getUpcomingMeetings(limit);
+    res.json({ success: true, meetings });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 51. Check Slot Availability
+app.get('/api/calendar/slots', (req, res) => {
+  try {
+    const { date, timeZone } = req.query;
+    const slots = getAvailableSlots(date, timeZone);
+    res.json({ success: true, ...slots });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 52. Create / Book Meeting (Manual Admin or Confirmed Lead)
+app.post('/api/calendar/meetings', async (req, res) => {
+  try {
+    const { leadId, gymName, ownerName, email, whatsappNumber, meetingDate, startTime, timeZone = 'Asia/Kolkata (IST)', meetingNotes } = req.body;
+
+    if (!meetingDate || !startTime) {
+      return res.status(400).json({ success: false, error: 'meetingDate and startTime are required.' });
+    }
+
+    const meetingLink = generateGoogleMeetLink();
+    const endTime = computeEndTime(startTime);
+    const googleCalendarUrl = generateGoogleCalendarUrl({
+      title: `GymStack 1-on-1 Demo for ${gymName || 'Fitness Facility'}`,
+      meetingDate,
+      startTime,
+      endTime,
+      meetingLink
+    });
+
+    const meeting = createMeeting({
+      leadId: leadId ? parseInt(leadId, 10) : null,
+      gymName: gymName || 'Fitness Facility',
+      ownerName: ownerName || 'Gym Owner',
+      email: email || null,
+      whatsappNumber: whatsappNumber || null,
+      meetingDate,
+      startTime,
+      endTime,
+      timeZone,
+      meetingLink,
+      googleCalendarUrl,
+      status: 'Scheduled',
+      meetingNotes,
+      channel: req.body.channel || 'web',
+      confirmedAt: new Date().toISOString()
+    });
+
+    if (leadId) {
+      updateLeadStatus(parseInt(leadId, 10), 'Meeting Scheduled');
+    }
+
+    // Dispatch dual confirmation across WhatsApp & Email
+    dispatchDualMeetingConfirmation(meeting).catch(err => {
+      console.warn('Confirmation dispatch error:', err.message);
+    });
+
+    res.json({ success: true, meeting });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 53. Update Meeting Status
+app.patch('/api/calendar/meetings/:id/status', (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!VALID_MEETING_STATUSES.includes(status)) {
+      return res.status(400).json({ success: false, error: `Invalid status "${status}". Allowed: ${VALID_MEETING_STATUSES.join(', ')}` });
+    }
+
+    const updated = updateMeeting(parseInt(req.params.id, 10), { status });
+    res.json({ success: updated });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 54. Reschedule Meeting
+app.post('/api/calendar/meetings/:id/reschedule', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { meetingDate, startTime, timeZone } = req.body;
+
+    const existing = getMeetingById(id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: `Meeting #${id} not found.` });
+    }
+
+    const endTime = computeEndTime(startTime);
+    const googleCalendarUrl = generateGoogleCalendarUrl({
+      title: `GymStack 1-on-1 Demo for ${existing.gymName}`,
+      meetingDate,
+      startTime,
+      endTime,
+      meetingLink: existing.meetingLink
+    });
+
+    updateMeeting(id, {
+      meetingDate,
+      startTime,
+      endTime,
+      timeZone: timeZone || existing.timeZone,
+      googleCalendarUrl,
+      status: 'Rescheduled',
+      confirmedAt: new Date().toISOString()
+    });
+
+    const updated = getMeetingById(id);
+
+    // Dispatch updated confirmation
+    dispatchDualMeetingConfirmation(updated).catch(err => {
+      console.warn('Reschedule confirmation error:', err.message);
+    });
+
+    res.json({ success: true, meeting: updated });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 55. Download iCalendar (.ics) File
+app.get('/api/calendar/meetings/:id/ics', (req, res) => {
+  try {
+    const meeting = getMeetingById(parseInt(req.params.id, 10));
+    if (!meeting) return res.status(404).send('Meeting not found');
+
+    const icsContent = generateIcsInvite({
+      title: `GymStack 1-on-1 Demo for ${meeting.gymName}`,
+      meetingDate: meeting.meetingDate,
+      startTime: meeting.startTime,
+      endTime: meeting.endTime,
+      meetingLink: meeting.meetingLink,
+      attendeeEmail: meeting.email,
+      attendeeName: meeting.ownerName
+    });
+
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="GymStack_Demo_${meeting.id}.ics"`);
+    res.send(icsContent);
+  } catch (err) {
+    res.status(500).send(err.message);
   }
 });
 

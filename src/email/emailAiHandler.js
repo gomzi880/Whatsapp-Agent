@@ -240,24 +240,31 @@ export async function processInboundEmail({
     };
   }
 
-  // Action 2: Meeting Requested
-  if (intent === 'Meeting_Requested') {
-    if (leadId) {
-      updateLeadStatus(leadId, 'Meeting Requested');
-    }
-
-    const meetingTemplate = buildEmail({
-      templateType: 'meeting_invite',
-      lead: lead || { gymName: 'your gym', ownerName: 'there' },
-      fromEmail: toEmail
+  // Action 2: Meeting Requested & Automatic Scheduling Flow
+  if (intent === 'Meeting_Requested' || (lead && (lead.status === 'Meeting Requested' || lead.status === 'Meeting Scheduled'))) {
+    const { processSchedulingTurn } = await import('../calendar/schedulingStateMachine.js');
+    const schedulingResult = await processSchedulingTurn({
+      lead: lead || { gymName: 'your gym', ownerName: 'there', businessEmail: fromEmail },
+      incomingText: bodyText || bodyHtml,
+      channel: 'email',
+      senderEmail: fromEmail
     });
+
+    const replyHtml = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #1e293b; line-height: 1.6; max-width: 600px;">
+        ${schedulingResult.replyText.split('\n\n').map(p => `<p style="margin: 0 0 14px 0;">${p.replace(/\n/g, '<br>')}</p>`).join('')}
+        <div style="margin-top: 30px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
+          GymStack Technologies Pvt Ltd • https://gymstack.in • sales@gymstack.in
+        </div>
+      </div>
+    `;
 
     const reply = await sendEmail({
       to: fromEmail,
       from: toEmail,
       subject: `Re: ${subject.replace(/^re:\s*/i, '')}`,
-      html: meetingTemplate.html,
-      text: meetingTemplate.text,
+      html: replyHtml,
+      text: schedulingResult.replyText,
       leadId,
       inReplyTo: messageId,
       references: messageId,
@@ -265,11 +272,12 @@ export async function processInboundEmail({
     });
 
     return {
-      status: 'meeting_invited',
+      status: schedulingResult.action,
       leadId,
       intent,
       inboundRecordId: inboundRecord.id,
-      outboundEmailId: reply.id
+      outboundEmailId: reply.id,
+      meeting: schedulingResult.meeting
     };
   }
 

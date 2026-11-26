@@ -47,6 +47,9 @@
         <button onclick="switchTab('email')" id="tab-email-btn" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
           <i class="fa-solid fa-envelope-circle-check mr-1.5 text-indigo-400"></i> Email Sales Hub
         </button>
+        <button onclick="switchTab('calendar')" id="tab-calendar-btn" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
+          <i class="fa-solid fa-calendar-check mr-1.5 text-blue-400"></i> Calendar &amp; Scheduler
+        </button>
       </nav>
 
       <div class="flex items-center space-x-2 text-xs">
@@ -847,6 +850,129 @@
 
     </div>
 
+    <!-- ======================================================== -->
+    <!-- TAB 6: CALENDAR & DEMO SCHEDULER                         -->
+    <!-- ======================================================== -->
+    <div id="tab-calendar" class="hidden space-y-5">
+      
+      <!-- Calendar Control Header -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 flex items-center">
+            <i class="fa-solid fa-calendar-check text-blue-600 mr-2 text-base"></i> Automatic Meeting Scheduling &amp; Calendar Control
+          </h3>
+          <p class="text-xs text-slate-500">Google Calendar integration, Google Meet links, slot collision protection &amp; dual confirmations</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="loadUpcomingMeetings(); loadMeetings(); loadCalendarStats();" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center">
+            <i class="fa-solid fa-arrows-rotate mr-1.5"></i> Refresh
+          </button>
+          <button onclick="openBookMeetingModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+            <i class="fa-solid fa-plus mr-1.5"></i> Schedule Demo Walkthrough
+          </button>
+        </div>
+      </div>
+
+      <!-- Calendar Metrics Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Scheduled Demos</p>
+          <p id="stat-cal-scheduled" class="text-xl font-bold text-emerald-600 mt-0.5">0</p>
+          <p class="text-[10px] text-slate-400 mt-0.5">Confirmed by prospects</p>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Today's Sessions</p>
+          <p id="stat-cal-today" class="text-xl font-bold text-blue-600 mt-0.5">0</p>
+          <p class="text-[10px] text-slate-400 mt-0.5">Happening today</p>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Waiting Confirm</p>
+          <p id="stat-cal-waiting" class="text-xl font-bold text-amber-600 mt-0.5">0</p>
+          <p class="text-[10px] text-slate-400 mt-0.5">Slots proposed</p>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Requested</p>
+          <p id="stat-cal-requested" class="text-xl font-bold text-purple-600 mt-0.5">0</p>
+          <p class="text-[10px] text-slate-400 mt-0.5">Initial demo interest</p>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Completed</p>
+          <p id="stat-cal-completed" class="text-xl font-bold text-indigo-600 mt-0.5">0</p>
+          <p class="text-[10px] text-slate-400 mt-0.5">Walkthroughs delivered</p>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Cancelled / No-Show</p>
+          <p id="stat-cal-cancelled" class="text-xl font-bold text-rose-600 mt-0.5">0</p>
+          <p class="text-[10px] text-slate-400 mt-0.5">Dropped or missed</p>
+        </div>
+      </div>
+
+      <!-- Upcoming Demos Spotlight -->
+      <div class="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-xl shadow-md p-4 text-white">
+        <div class="flex items-center justify-between border-b border-blue-800/80 pb-2.5 mb-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider flex items-center">
+            <i class="fa-solid fa-clock-rotate-left mr-2 text-blue-300"></i> Next Upcoming Walkthroughs
+          </h4>
+          <span class="text-[11px] text-blue-200">1-on-1 Google Meet Screen Shares</span>
+        </div>
+        <div id="upcoming-meetings-container" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div class="p-3 bg-white/10 rounded-lg text-xs text-blue-100 flex items-center justify-center">
+            Loading upcoming meetings...
+          </div>
+        </div>
+      </div>
+
+      <!-- Complete Meetings Pipeline Table -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-slate-50/50">
+          <div>
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center">
+              <i class="fa-solid fa-list-check text-blue-600 mr-2"></i> All Scheduled &amp; Proposed Demos
+            </h4>
+            <p class="text-[11px] text-slate-500">Track demo confirmations, meeting links, attendance statuses and rescheduling</p>
+          </div>
+
+          <!-- Status Filter Buttons -->
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-[10px] font-bold text-slate-400 uppercase mr-1">Status:</span>
+            <button onclick="filterMeetingStatus('')" class="cal-status-btn px-2 py-1 text-[11px] font-semibold rounded-lg bg-blue-600 text-white shadow-xs" data-status="">All</button>
+            <button onclick="filterMeetingStatus('Scheduled')" class="cal-status-btn px-2 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-emerald-700 hover:bg-slate-100" data-status="Scheduled">Scheduled</button>
+            <button onclick="filterMeetingStatus('Waiting for Confirmation')" class="cal-status-btn px-2 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-amber-700 hover:bg-slate-100" data-status="Waiting for Confirmation">Waiting Confirm</button>
+            <button onclick="filterMeetingStatus('Requested')" class="cal-status-btn px-2 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-purple-700 hover:bg-slate-100" data-status="Requested">Requested</button>
+            <button onclick="filterMeetingStatus('Completed')" class="cal-status-btn px-2 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" data-status="Completed">Completed</button>
+            <button onclick="filterMeetingStatus('Cancelled')" class="cal-status-btn px-2 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-rose-700 hover:bg-slate-100" data-status="Cancelled">Cancelled</button>
+            <button onclick="filterMeetingStatus('No Show')" class="cal-status-btn px-2 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-100" data-status="No Show">No Show</button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
+              <tr>
+                <th class="px-4 py-2.5">Gym &amp; Prospect</th>
+                <th class="px-4 py-2.5">Contact Details</th>
+                <th class="px-4 py-2.5">Date &amp; Time</th>
+                <th class="px-4 py-2.5">Meeting Platform</th>
+                <th class="px-4 py-2.5 text-center">Channel</th>
+                <th class="px-4 py-2.5 text-center">Status</th>
+                <th class="px-4 py-2.5 text-right">Admin Actions</th>
+              </tr>
+            </thead>
+            <tbody id="meetings-table-body" class="divide-y divide-slate-100 font-medium">
+              <tr><td colspan="7" class="text-center py-8 text-slate-400">Loading scheduled meetings...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
   </main>
 
   <!-- ======================================================== -->
@@ -1272,6 +1398,145 @@
     </div>
   </div>
 
+  <!-- ======================================================== -->
+  <!-- MODAL 9: SCHEDULE DEMO WALKTHROUGH (MANUAL BOOKING)      -->
+  <!-- ======================================================== -->
+  <div id="book-meeting-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center">
+          <i class="fa-solid fa-calendar-plus text-blue-600 mr-2"></i> Schedule 1-on-1 Demo Walkthrough
+        </h3>
+        <button onclick="closeBookMeetingModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+      <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Gym Name</label>
+            <input type="text" id="bm-gym-name" placeholder="e.g. Gold Fitness Club" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Owner / Contact Name</label>
+            <input type="text" id="bm-owner-name" placeholder="e.g. Vikram Sharma" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">WhatsApp Number (with country code)</label>
+            <input type="text" id="bm-whatsapp" placeholder="e.g. 918358826116" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
+            <input type="email" id="bm-email" placeholder="e.g. owner@goldfitness.com" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Meeting Date</label>
+            <input type="date" id="bm-date" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Start Time</label>
+            <select id="bm-time" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+              <option value="10:00">10:00 AM</option>
+              <option value="11:30">11:30 AM</option>
+              <option value="14:00">02:00 PM</option>
+              <option value="15:30" selected>03:30 PM</option>
+              <option value="17:00">05:00 PM</option>
+              <option value="18:30">06:30 PM</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Timezone</label>
+            <select id="bm-timezone" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+              <option value="Asia/Kolkata (IST)" selected>Asia/Kolkata (IST)</option>
+              <option value="America/New_York (EST)">America/New_York (EST)</option>
+              <option value="America/Los_Angeles (PST)">America/Los_Angeles (PST)</option>
+              <option value="Europe/London (GMT)">Europe/London (GMT)</option>
+              <option value="Asia/Dubai (GST)">Asia/Dubai (GST)</option>
+              <option value="Australia/Sydney (AEST)">Australia/Sydney (AEST)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Meeting Agenda / Internal Notes</label>
+          <textarea id="bm-notes" rows="2" placeholder="Specific prospect requirements (e.g. 300 members, interested in biometrics + WhatsApp fee reminders)" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium"></textarea>
+        </div>
+
+        <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-[11px] text-blue-900">
+          <i class="fa-solid fa-bell mr-1 text-blue-600"></i>
+          <strong>Dual Notification:</strong> Booking automatically generates a Google Meet link, creates a Google Calendar event URL, and dispatches confirmations via WhatsApp and Email with an attached iCalendar (.ics) invite.
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+        <button onclick="closeBookMeetingModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+        <button id="btn-submit-book-meeting" onclick="submitBookMeeting()" class="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm">
+          <i class="fa-solid fa-check mr-1.5"></i> Lock &amp; Schedule Meeting
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL 10: RESCHEDULE DEMO MEETING                        -->
+  <!-- ======================================================== -->
+  <div id="reschedule-meeting-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center">
+          <i class="fa-solid fa-clock-rotate-left text-amber-600 mr-2"></i> Reschedule Demo Meeting
+        </h3>
+        <button onclick="closeRescheduleModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+      <input type="hidden" id="reschedule-meeting-id">
+      <div class="space-y-3">
+        <p id="reschedule-target-text" class="text-xs text-slate-600 font-medium"></p>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">New Meeting Date</label>
+          <input type="date" id="reschedule-date" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">New Start Time</label>
+            <select id="reschedule-time" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+              <option value="10:00">10:00 AM</option>
+              <option value="11:30">11:30 AM</option>
+              <option value="14:00">02:00 PM</option>
+              <option value="15:30" selected>03:30 PM</option>
+              <option value="17:00">05:00 PM</option>
+              <option value="18:30">06:30 PM</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Timezone</label>
+            <select id="reschedule-timezone" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+              <option value="Asia/Kolkata (IST)">Asia/Kolkata (IST)</option>
+              <option value="America/New_York (EST)">America/New_York (EST)</option>
+              <option value="Europe/London (GMT)">Europe/London (GMT)</option>
+              <option value="Asia/Dubai (GST)">Asia/Dubai (GST)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-900">
+          <i class="fa-solid fa-triangle-exclamation mr-1 text-amber-600"></i>
+          <strong>Rule:</strong> Rescheduling updates the meeting status to <em>Rescheduled</em> and dispatches updated Google Meet details across both WhatsApp and Email.
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+        <button onclick="closeRescheduleModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+        <button id="btn-submit-reschedule" onclick="submitRescheduleMeeting()" class="px-4 py-2 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-sm">
+          <i class="fa-solid fa-arrows-rotate mr-1.5"></i> Update &amp; Notify
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Client-Side Scripts -->
   <script>
     let locationData = {};
@@ -1285,6 +1550,7 @@
     let currentMessageIntentFilter = '';
     let currentEmailStatusFilter = '';
     let currentEmailDirFilter = '';
+    let currentMeetingStatusFilter = '';
 
     document.addEventListener('DOMContentLoaded', async () => {
       await loadInitialData();
@@ -1300,6 +1566,9 @@
       await loadEmailStats();
       await loadEmailCampaigns();
       await loadEmailLogs();
+      await loadCalendarStats();
+      await loadUpcomingMeetings();
+      await loadMeetings();
     });
 
     function switchTab(tab) {
@@ -1309,12 +1578,14 @@
       document.getElementById('tab-knowledge').classList.toggle('hidden', tab !== 'knowledge');
       document.getElementById('tab-outreach').classList.toggle('hidden', tab !== 'outreach');
       document.getElementById('tab-email').classList.toggle('hidden', tab !== 'email');
+      document.getElementById('tab-calendar').classList.toggle('hidden', tab !== 'calendar');
 
       const btnResearch = document.getElementById('tab-research-btn');
       const btnLeads = document.getElementById('tab-leads-btn');
       const btnKnowledge = document.getElementById('tab-knowledge-btn');
       const btnOutreach = document.getElementById('tab-outreach-btn');
       const btnEmail = document.getElementById('tab-email-btn');
+      const btnCalendar = document.getElementById('tab-calendar-btn');
 
       btnResearch.className = tab === 'research' 
         ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all'
@@ -1336,10 +1607,19 @@
         ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white shadow transition-all'
         : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
 
+      btnCalendar.className = tab === 'calendar'
+        ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all'
+        : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
+
       if (tab === 'email') {
         loadEmailStats();
         loadEmailCampaigns();
         loadEmailLogs();
+      }
+      if (tab === 'calendar') {
+        loadCalendarStats();
+        loadUpcomingMeetings();
+        loadMeetings();
       }
     }
 
@@ -1361,6 +1641,11 @@
         loadEmailStats();
         loadEmailCampaigns();
         loadEmailLogs();
+      }
+      if (activeTab === 'calendar') {
+        loadCalendarStats();
+        loadUpcomingMeetings();
+        loadMeetings();
       }
     }
 
@@ -2871,6 +3156,303 @@ Would you be open to seeing a quick 5-minute product walkthrough or testing our 
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1.5"></i> Send Email Now';
+      }
+    }
+
+    // ==========================================
+    // CALENDAR & MEETING SCHEDULER JAVASCRIPT METHODS
+    // ==========================================
+
+    async function loadCalendarStats() {
+      try {
+        const res = await fetch('/api/calendar/stats');
+        const data = await res.json();
+        if (data.success && data.stats) {
+          const s = data.stats;
+          document.getElementById('stat-cal-scheduled').innerText = s.scheduled.toLocaleString();
+          document.getElementById('stat-cal-today').innerText = s.todayMeetings.toLocaleString();
+          document.getElementById('stat-cal-waiting').innerText = s.waiting.toLocaleString();
+          document.getElementById('stat-cal-requested').innerText = s.requested.toLocaleString();
+          document.getElementById('stat-cal-completed').innerText = s.completed.toLocaleString();
+          document.getElementById('stat-cal-cancelled').innerText = (s.cancelled + s.noShow).toLocaleString();
+        }
+      } catch (e) {
+        console.error('Failed to load calendar stats:', e);
+      }
+    }
+
+    async function loadUpcomingMeetings() {
+      try {
+        const res = await fetch('/api/calendar/upcoming?limit=3');
+        const data = await res.json();
+        const container = document.getElementById('upcoming-meetings-container');
+        container.innerHTML = '';
+
+        if (!data.meetings || data.meetings.length === 0) {
+          container.innerHTML = '<div class="col-span-full py-4 text-center text-blue-200 text-xs">No upcoming sessions scheduled today. New confirmed demos will appear here.</div>';
+          return;
+        }
+
+        data.meetings.forEach(m => {
+          const time12 = format12hClient(m.startTime);
+          container.innerHTML += `
+            <div class="bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl p-3.5 space-y-2 transition-all">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-blue-300 bg-blue-950/60 px-2 py-0.5 rounded border border-blue-800">${m.status}</span>
+                <span class="text-[11px] font-bold text-amber-300"><i class="fa-solid fa-calendar mr-1"></i> ${m.meetingDate}</span>
+              </div>
+              <div>
+                <h5 class="text-xs font-bold text-white leading-snug">${escapeHtml(m.gymName)}</h5>
+                <p class="text-[11px] text-blue-200">${escapeHtml(m.ownerName)} • <span class="font-mono">${time12}</span></p>
+              </div>
+              <div class="pt-2 border-t border-white/10 flex items-center justify-between gap-1.5">
+                <a href="${m.meetingLink}" target="_blank" class="px-2.5 py-1 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded flex items-center shadow-xs">
+                  <i class="fa-solid fa-video mr-1"></i> Join Meet
+                </a>
+                <a href="${m.googleCalendarUrl}" target="_blank" class="px-2.5 py-1 text-[11px] font-semibold bg-white/20 hover:bg-white/30 text-white rounded flex items-center">
+                  <i class="fa-regular fa-calendar-plus mr-1"></i> Calendar
+                </a>
+              </div>
+            </div>
+          `;
+        });
+      } catch (e) {
+        console.error('Failed to load upcoming meetings:', e);
+      }
+    }
+
+    async function loadMeetings() {
+      try {
+        const params = new URLSearchParams({
+          limit: 50,
+          status: currentMeetingStatusFilter
+        });
+        const res = await fetch(`/api/calendar/meetings?${params.toString()}`);
+        const data = await res.json();
+        const tbody = document.getElementById('meetings-table-body');
+        tbody.innerHTML = '';
+
+        if (!data.meetings || data.meetings.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-slate-400">No demo meetings match the filter criteria. Click "+ Schedule Demo Walkthrough" to book one.</td></tr>';
+          return;
+        }
+
+        data.meetings.forEach(m => {
+          const time12 = format12hClient(m.startTime);
+          let badge = 'bg-slate-100 text-slate-700';
+          if (m.status === 'Scheduled') badge = 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+          if (m.status === 'Waiting for Confirmation') badge = 'bg-amber-100 text-amber-800 border border-amber-300';
+          if (m.status === 'Requested') badge = 'bg-purple-100 text-purple-800 border border-purple-300';
+          if (m.status === 'Rescheduled') badge = 'bg-blue-100 text-blue-800 border border-blue-300';
+          if (m.status === 'Completed') badge = 'bg-slate-100 text-slate-800 border border-slate-300';
+          if (m.status === 'Cancelled') badge = 'bg-rose-100 text-rose-800 border border-rose-300';
+          if (m.status === 'No Show') badge = 'bg-slate-200 text-slate-600 border border-slate-400';
+
+          let channelBadge = m.channel === 'whatsapp'
+            ? '<span class="text-green-600 font-bold"><i class="fa-brands fa-whatsapp mr-1"></i> WhatsApp</span>'
+            : (m.channel === 'email' ? '<span class="text-indigo-600 font-bold"><i class="fa-solid fa-envelope mr-1"></i> Email</span>' : '<span class="text-slate-600 font-semibold"><i class="fa-solid fa-globe mr-1"></i> Web</span>');
+
+          tbody.innerHTML += `
+            <tr class="hover:bg-slate-50/80 transition-colors">
+              <td class="px-4 py-3">
+                <div class="font-bold text-slate-900">${escapeHtml(m.gymName)}</div>
+                <div class="text-[11px] text-slate-500">${escapeHtml(m.ownerName)}</div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="text-xs text-slate-700 font-mono">${escapeHtml(m.whatsappNumber || '-')}</div>
+                <div class="text-[11px] text-slate-500">${escapeHtml(m.email || '-')}</div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="font-bold text-slate-900">${m.meetingDate}</div>
+                <div class="text-[11px] text-slate-600 font-mono">${time12} (${escapeHtml(m.timeZone || 'IST')})</div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex items-center space-x-1.5">
+                  <a href="${m.meetingLink}" target="_blank" class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 flex items-center">
+                    <i class="fa-solid fa-video mr-1"></i> Meet
+                  </a>
+                  <a href="${m.googleCalendarUrl}" target="_blank" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 flex items-center">
+                    <i class="fa-regular fa-calendar mr-1"></i> Cal
+                  </a>
+                  <a href="/api/calendar/meetings/${m.id}/ics" download class="p-1 text-slate-400 hover:text-slate-600 text-xs" title="Download .ics"><i class="fa-solid fa-download"></i></a>
+                </div>
+              </td>
+              <td class="px-4 py-3 text-center text-xs">${channelBadge}</td>
+              <td class="px-4 py-3 text-center"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${badge}">${m.status}</span></td>
+              <td class="px-4 py-3 text-right">
+                <div class="flex items-center justify-end space-x-1">
+                  <button onclick="openRescheduleModal(${m.id}, '${m.meetingDate}', '${m.startTime}', '${escapeHtml(m.gymName)}')" class="px-2 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-50 rounded" title="Reschedule"><i class="fa-solid fa-clock-rotate-left mr-0.5"></i> Reschedule</button>
+                  <button onclick="updateMeetingStatusQuick(${m.id}, 'Completed')" class="px-1.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 rounded" title="Mark Completed"><i class="fa-solid fa-check"></i></button>
+                  <button onclick="updateMeetingStatusQuick(${m.id}, 'No Show')" class="px-1.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-50 rounded" title="Mark No Show"><i class="fa-solid fa-user-xmark"></i></button>
+                  <button onclick="updateMeetingStatusQuick(${m.id}, 'Cancelled')" class="px-1.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-50 rounded" title="Cancel"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+      } catch (e) {
+        console.error('Failed to load meetings:', e);
+      }
+    }
+
+    function format12hClient(time24) {
+      if (!time24) return '';
+      const [hStr, mStr] = time24.split(':');
+      let h = parseInt(hStr, 10);
+      const m = mStr || '00';
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12;
+      h = h ? h : 12;
+      return `${h.toString().padStart(2, '0')}:${m} ${ampm}`;
+    }
+
+    function filterMeetingStatus(st) {
+      currentMeetingStatusFilter = st;
+      document.querySelectorAll('.cal-status-btn').forEach(btn => {
+        const isMatch = btn.getAttribute('data-status') === st;
+        btn.className = isMatch
+          ? 'cal-status-btn px-2 py-1 text-[11px] font-semibold rounded-lg bg-blue-600 text-white shadow-xs'
+          : 'cal-status-btn px-2 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100';
+      });
+      loadMeetings();
+    }
+
+    function openBookMeetingModal() {
+      // Set default date to tomorrow
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const y = tomorrow.getFullYear();
+      const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
+      const d = String(tomorrow.getDate()).padStart(2, '0');
+      document.getElementById('bm-date').value = `${y}-${m}-${d}`;
+
+      document.getElementById('bm-gym-name').value = '';
+      document.getElementById('bm-owner-name').value = '';
+      document.getElementById('bm-whatsapp').value = '';
+      document.getElementById('bm-email').value = '';
+      document.getElementById('bm-notes').value = '';
+      document.getElementById('book-meeting-modal').classList.remove('hidden');
+    }
+
+    function closeBookMeetingModal() {
+      document.getElementById('book-meeting-modal').classList.add('hidden');
+    }
+
+    async function submitBookMeeting() {
+      const gymName = document.getElementById('bm-gym-name').value.trim();
+      const ownerName = document.getElementById('bm-owner-name').value.trim();
+      const whatsappNumber = document.getElementById('bm-whatsapp').value.trim();
+      const email = document.getElementById('bm-email').value.trim();
+      const meetingDate = document.getElementById('bm-date').value;
+      const startTime = document.getElementById('bm-time').value;
+      const timeZone = document.getElementById('bm-timezone').value;
+      const meetingNotes = document.getElementById('bm-notes').value.trim();
+
+      if (!meetingDate || !startTime) {
+        alert('Please choose date and start time.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-submit-book-meeting');
+      btn.disabled = true;
+      btn.innerText = 'Scheduling & Notifying...';
+
+      try {
+        const res = await fetch('/api/calendar/meetings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gymName: gymName || 'Fitness Facility',
+            ownerName: ownerName || 'Gym Owner',
+            whatsappNumber,
+            email,
+            meetingDate,
+            startTime,
+            timeZone,
+            meetingNotes
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          closeBookMeetingModal();
+          alert(`Demo meeting successfully locked in for ${meetingDate} at ${format12hClient(startTime)}! Google Meet link generated and confirmations dispatched.`);
+          await loadCalendarStats();
+          await loadUpcomingMeetings();
+          await loadMeetings();
+        } else {
+          alert('Scheduling failed: ' + data.error);
+        }
+      } catch (e) {
+        alert('Error booking meeting: ' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check mr-1.5"></i> Lock &amp; Schedule Meeting';
+      }
+    }
+
+    function openRescheduleModal(id, date, startTime, gymName) {
+      document.getElementById('reschedule-meeting-id').value = id;
+      document.getElementById('reschedule-target-text').innerText = `Rescheduling demo session for "${gymName}".`;
+      document.getElementById('reschedule-date').value = date;
+      document.getElementById('reschedule-time').value = startTime;
+      document.getElementById('reschedule-meeting-modal').classList.remove('hidden');
+    }
+
+    function closeRescheduleModal() {
+      document.getElementById('reschedule-meeting-modal').classList.add('hidden');
+    }
+
+    async function submitRescheduleMeeting() {
+      const id = document.getElementById('reschedule-meeting-id').value;
+      const meetingDate = document.getElementById('reschedule-date').value;
+      const startTime = document.getElementById('reschedule-time').value;
+      const timeZone = document.getElementById('reschedule-timezone').value;
+
+      if (!meetingDate || !startTime) {
+        alert('Please select date and time.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/calendar/meetings/${id}/reschedule`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ meetingDate, startTime, timeZone })
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeRescheduleModal();
+          alert(`Meeting #${id} rescheduled to ${meetingDate} at ${format12hClient(startTime)}. Updated notifications dispatched!`);
+          await loadCalendarStats();
+          await loadUpcomingMeetings();
+          await loadMeetings();
+        } else {
+          alert('Reschedule failed: ' + data.error);
+        }
+      } catch (e) {
+        alert('Error rescheduling meeting: ' + e.message);
+      }
+    }
+
+    async function updateMeetingStatusQuick(id, status) {
+      if (!confirm(`Update meeting status to "${status}"?`)) return;
+      try {
+        const res = await fetch(`/api/calendar/meetings/${id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status })
+        });
+        const data = await res.json();
+        if (data.success) {
+          await loadCalendarStats();
+          await loadUpcomingMeetings();
+          await loadMeetings();
+        } else {
+          alert('Status update failed: ' + data.error);
+        }
+      } catch (e) {
+        alert('Error: ' + e.message);
       }
     }
   </script>

@@ -189,3 +189,15 @@ Every incoming message from a prospect is analyzed in real time:
 | `POST /api/email/send` | `POST` | Send single direct or test email with template and optional brochure PDF |
 | `POST /api/email/inbound` | `POST` | Webhook / receiver endpoint for inbound email replies, intent classification, and AI response |
 | `GET /api/email/eligible-leads` | `GET` | Preview leads eligible for email outreach with verified email and deduplication |
+
+### Automatic Meeting Scheduling & Google Calendar Endpoints
+| Endpoint | Method | Description |
+|---|---|---|
+| `GET /api/calendar/stats` | `GET` | Calendar metrics: total, scheduled, waiting confirmation, requested, completed, cancelled, no-show, today's sessions |
+| `GET /api/calendar/meetings` | `GET` | Query meetings pipeline with status filters (`Scheduled`, `Waiting for Confirmation`, `Requested`, `Completed`, `Cancelled`, `No Show`) |
+| `GET /api/calendar/upcoming` | `GET` | Next upcoming 1-on-1 demo sessions with Google Meet links |
+| `GET /api/calendar/slots` | `GET` | Get conflict-free available slots for date and timezone |
+| `POST /api/calendar/meetings` | `POST` | Book demo meeting: generates Google Meet link, creates Google Calendar event URL, dispatches WhatsApp & Email (.ics) |
+| `PATCH /api/calendar/meetings/:id/status` | `PATCH` | Update meeting status (`Scheduled`, `Rescheduled`, `Completed`, `Cancelled`, `No Show`) |
+| `POST /api/calendar/meetings/:id/reschedule` | `POST` | Reschedule demo session to new date/time with updated dual notifications |
+| `GET /api/calendar/meetings/:id/ics` | `GET` | Download standards-compliant iCalendar (.ics) invite file |

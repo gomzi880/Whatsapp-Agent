@@ -178,7 +178,27 @@ export async function processProspectReply(remoteJid, messageText) {
     }
   }
 
-  return { lead, intent, haltOutreach };
+  // Handle Automatic Meeting Scheduling Workflow if intent is demo_requested or lead has active meeting
+  let schedulingReply = null;
+  let meeting = null;
+
+  if (lead && (intent === 'demo_requested' || lead.status === 'Meeting Requested')) {
+    try {
+      const { processSchedulingTurn } = await import('../calendar/schedulingStateMachine.js');
+      const schedulingResult = await processSchedulingTurn({
+        lead,
+        incomingText: messageText,
+        channel: 'whatsapp',
+        remoteJid
+      });
+      schedulingReply = schedulingResult.replyText;
+      meeting = schedulingResult.meeting;
+    } catch (err) {
+      console.warn('Error in scheduling state machine:', err.message);
+    }
+  }
+
+  return { lead, intent, haltOutreach, schedulingReply, meeting };
 }
 
 /**

@@ -216,6 +216,35 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_lead_emails_toEmail ON lead_emails(toEmail);
   CREATE INDEX IF NOT EXISTS idx_lead_emails_msgId ON lead_emails(messageId);
   CREATE INDEX IF NOT EXISTS idx_email_campaigns_status ON email_campaigns(status);
+
+  CREATE TABLE IF NOT EXISTS meetings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    leadId INTEGER,
+    gymName TEXT NOT NULL,
+    ownerName TEXT NOT NULL,
+    email TEXT,
+    whatsappNumber TEXT,
+    meetingDate TEXT NOT NULL,
+    startTime TEXT NOT NULL,
+    endTime TEXT,
+    timeZone TEXT DEFAULT 'Asia/Kolkata (IST)',
+    meetingLink TEXT,
+    googleCalendarEventId TEXT,
+    googleCalendarUrl TEXT,
+    status TEXT DEFAULT 'Requested',
+    meetingNotes TEXT,
+    channel TEXT DEFAULT 'whatsapp',
+    confirmedAt TEXT,
+    reminderSent24h INTEGER DEFAULT 0,
+    reminderSent1h INTEGER DEFAULT 0,
+    createdAt TEXT DEFAULT (datetime('now')),
+    updatedAt TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY(leadId) REFERENCES leads(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_meetings_leadId ON meetings(leadId);
+  CREATE INDEX IF NOT EXISTS idx_meetings_date ON meetings(meetingDate);
+  CREATE INDEX IF NOT EXISTS idx_meetings_status ON meetings(status);
 `);
 
 /**
@@ -1204,6 +1233,186 @@ export function getEmailStats() {
     totalOptOuts,
     interestedLeads,
     replyRate
+  };
+}
+
+/**
+ * ============================================================================
+ * AUTOMATIC MEETING SCHEDULING AGENT DATABASE HELPERS
+ * ============================================================================
+ */
+
+export const VALID_MEETING_STATUSES = [
+  'Requested',
+  'Waiting for Confirmation',
+  'Scheduled',
+  'Rescheduled',
+  'Completed',
+  'Cancelled',
+  'No Show'
+];
+
+export function createMeeting(data) {
+  const stmt = db.prepare(`
+    INSERT INTO meetings (
+      leadId, gymName, ownerName, email, whatsappNumber,
+      meetingDate, startTime, endTime, timeZone,
+      meetingLink, googleCalendarEventId, googleCalendarUrl,
+      status, meetingNotes, channel, confirmedAt,
+      reminderSent24h, reminderSent1h
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const info = stmt.run(
+    data.leadId || null,
+    data.gymName || 'Fitness Facility',
+    data.ownerName || 'Gym Owner',
+    data.email || null,
+    data.whatsappNumber || null,
+    data.meetingDate,
+    data.startTime,
+    data.endTime || null,
+    data.timeZone || 'Asia/Kolkata (IST)',
+    data.meetingLink || null,
+    data.googleCalendarEventId || null,
+    data.googleCalendarUrl || null,
+    data.status || 'Requested',
+    data.meetingNotes || null,
+    data.channel || 'whatsapp',
+    data.confirmedAt || null,
+    data.reminderSent24h ? 1 : 0,
+    data.reminderSent1h ? 1 : 0
+  );
+
+  return { id: info.lastInsertRowid, ...data };
+}
+
+export function updateMeeting(id, data) {
+  const fields = ["updatedAt = datetime('now')"];
+  const params = [];
+
+  for (const [key, value] of Object.entries(data)) {
+    if (key === 'updatedAt' || key === 'id') continue;
+    fields.push(`${key} = ?`);
+    params.push(value);
+  }
+
+  if (fields.length === 1) return false;
+
+  params.push(id);
+  const stmt = db.prepare(`UPDATE meetings SET ${fields.join(', ')} WHERE id = ?`);
+  const result = stmt.run(...params);
+  return result.changes > 0;
+}
+
+export function getMeetingById(id) {
+  if (!id) return null;
+  return db.prepare('SELECT * FROM meetings WHERE id = ?').get(id) || null;
+}
+
+export function getMeetings(filters = {}, limit = 50, offset = 0) {
+  const whereClauses = [];
+  const params = [];
+
+  if (filters.status && filters.status !== 'All') {
+    whereClauses.push('m.status = ?');
+    params.push(filters.status);
+  }
+
+  if (filters.leadId) {
+    whereClauses.push('m.leadId = ?');
+    params.push(filters.leadId);
+  }
+
+  if (filters.date) {
+    whereClauses.push('m.meetingDate = ?');
+    params.push(filters.date);
+  }
+
+  if (filters.search) {
+    whereClauses.push('(m.gymName LIKE ? OR m.ownerName LIKE ? OR m.email LIKE ? OR m.whatsappNumber LIKE ?)');
+    const term = `%${filters.search}%`;
+    params.push(term, term, term, term);
+  }
+
+  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+  const meetings = db.prepare(`
+    SELECT m.*, l.city, l.country
+    FROM meetings m
+    LEFT JOIN leads l ON m.leadId = l.id
+    ${whereSql}
+    ORDER BY m.meetingDate DESC, m.startTime DESC
+    LIMIT ? OFFSET ?
+  `).all(...params, limit, offset);
+
+  const total = db.prepare(`
+    SELECT COUNT(*) as count
+    FROM meetings m
+    ${whereSql}
+  `).get(...params).count;
+
+  return { meetings, total };
+}
+
+export function getUpcomingMeetings(limit = 10) {
+  return db.prepare(`
+    SELECT m.*, l.city, l.country
+    FROM meetings m
+    LEFT JOIN leads l ON m.leadId = l.id
+    WHERE m.status IN ('Scheduled', 'Rescheduled', 'Waiting for Confirmation')
+      AND m.meetingDate >= date('now')
+    ORDER BY m.meetingDate ASC, m.startTime ASC
+    LIMIT ?
+  `).all(limit);
+}
+
+export function getLeadMeetings(leadId) {
+  if (!leadId) return [];
+  return db.prepare(`
+    SELECT * FROM meetings
+    WHERE leadId = ?
+    ORDER BY id DESC
+  `).all(leadId);
+}
+
+export function checkSlotAvailability(meetingDate, startTime) {
+  // Check if any active meeting is already booked at this exact date & time
+  const existing = db.prepare(`
+    SELECT * FROM meetings
+    WHERE meetingDate = ?
+      AND startTime = ?
+      AND status IN ('Scheduled', 'Rescheduled', 'Waiting for Confirmation')
+    LIMIT 1
+  `).get(meetingDate, startTime);
+
+  return !existing;
+}
+
+export function getCalendarStats() {
+  const total = db.prepare('SELECT COUNT(*) as count FROM meetings').get().count;
+  const scheduled = db.prepare("SELECT COUNT(*) as count FROM meetings WHERE status = 'Scheduled'").get().count;
+  const waiting = db.prepare("SELECT COUNT(*) as count FROM meetings WHERE status = 'Waiting for Confirmation'").get().count;
+  const requested = db.prepare("SELECT COUNT(*) as count FROM meetings WHERE status = 'Requested'").get().count;
+  const completed = db.prepare("SELECT COUNT(*) as count FROM meetings WHERE status = 'Completed'").get().count;
+  const cancelled = db.prepare("SELECT COUNT(*) as count FROM meetings WHERE status = 'Cancelled'").get().count;
+  const noShow = db.prepare("SELECT COUNT(*) as count FROM meetings WHERE status = 'No Show'").get().count;
+
+  const todayMeetings = db.prepare(`
+    SELECT COUNT(*) as count FROM meetings
+    WHERE meetingDate = date('now')
+      AND status IN ('Scheduled', 'Rescheduled')
+  `).get().count;
+
+  return {
+    total,
+    scheduled,
+    waiting,
+    requested,
+    completed,
+    cancelled,
+    noShow,
+    todayMeetings
   };
 }
 

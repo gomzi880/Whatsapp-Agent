@@ -309,6 +309,26 @@ async function startWhatsAppBot() {
           await sock.sendPresenceUpdate('paused', remoteJid);
           continue;
         }
+
+        // If scheduling state machine produced an intelligent meeting scheduling response
+        if (result.schedulingReply) {
+          await sock.readMessages([msg.key]);
+          await sock.sendPresenceUpdate('composing', remoteJid);
+          const delayMs = calculateHumanDelay(result.schedulingReply);
+          await delay(delayMs);
+          await sock.sendMessage(remoteJid, { text: result.schedulingReply });
+          console.log(`📅 Meeting Scheduler replied to ${remoteJid}: "${result.schedulingReply.slice(0, 80)}..."`);
+          recordLeadMessage({
+            leadId: activeLead ? activeLead.id : null,
+            campaignId: null,
+            remoteJid,
+            senderRole: 'agent',
+            messageText: result.schedulingReply,
+            status: 'sent',
+            intent: 'meeting_scheduling'
+          });
+          continue;
+        }
       } catch (err) {
         console.warn('Error in conversation intelligence processing:', err.message);
       }
