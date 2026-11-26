@@ -42,7 +42,16 @@ import db, {
   getPendingFollowUps,
   checkFollowUpEligibility,
   getHighValueProspects,
-  FEEDBACK_CATEGORIES
+  FEEDBACK_CATEGORIES,
+  initAgentMonitoringIfEmpty,
+  logAuditAction,
+  getAuditLogs,
+  getAgentMonitoring,
+  updateAgentMonitoring,
+  getExecutiveDashboardStats,
+  getSalesAnalyticsData,
+  getAdminSettings,
+  updateAdminSettings
 } from '../database/db.js';
 import {
   generateFeedbackMessage,
@@ -1322,6 +1331,136 @@ app.get('/api/feedback/unresponsive', (req, res) => {
     const days = parseInt(req.query.days || 3, 10);
     const leads = identifyUnresponsiveLeads(days);
     res.json({ success: true, count: leads.length, leads });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================
+// INSTRUCTION 8: GLOBAL GYM SALES DASHBOARD & COMMAND CENTER
+// ==========================================
+
+// 66. Executive Overview KPIs (16 Exact Widgets)
+app.get('/api/dashboard/overview-stats', (req, res) => {
+  try {
+    const stats = getExecutiveDashboardStats();
+    res.json({ success: true, stats });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 67. Sales Analytics Data (10 Datasets for Charts)
+app.get('/api/dashboard/analytics', (req, res) => {
+  try {
+    const analytics = getSalesAnalyticsData();
+    res.json({ success: true, analytics });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 68. Agent Monitoring List & Execution Telemetry
+app.get('/api/dashboard/agents', (req, res) => {
+  try {
+    const agents = getAgentMonitoring();
+    res.json({ success: true, count: agents.length, agents });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 69. Agent Control Action (Start, Stop, Pause, Resume)
+app.post('/api/dashboard/agents/:agentName/action', (req, res) => {
+  try {
+    const { agentName } = req.params;
+    const { action, currentTask } = req.body;
+
+    let newStatus = 'Active';
+    if (action === 'stop') newStatus = 'Stopped';
+    else if (action === 'pause') newStatus = 'Paused';
+    else if (action === 'resume' || action === 'start') newStatus = 'Active';
+    else {
+      return res.status(400).json({ success: false, error: `Invalid action "${action}". Allowed: start, stop, pause, resume.` });
+    }
+
+    const updated = updateAgentMonitoring(agentName, {
+      runningStatus: newStatus,
+      currentTask: currentTask || (newStatus === 'Active' ? 'Operational - Monitoring pipeline' : `${newStatus} by administrator`),
+      lastExecution: new Date().toISOString()
+    });
+
+    logAuditAction({
+      agentName,
+      actionType: `AGENT_${action.toUpperCase()}`,
+      targetEntity: 'agent_monitoring',
+      status: 'success',
+      details: { action, newStatus, currentTask },
+      performedBy: 'administrator'
+    });
+
+    res.json({ success: updated, agentName, action, runningStatus: newStatus });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 70. Audit Trail Logs (Search & Filters)
+app.get('/api/dashboard/audit-logs', (req, res) => {
+  try {
+    const { agentName, actionType, status, search, limit = 50, offset = 0 } = req.query;
+    const result = getAuditLogs({
+      agentName,
+      actionType,
+      status,
+      search,
+      limit: parseInt(limit, 10),
+      offset: parseInt(offset, 10)
+    });
+    res.json({ success: true, count: result.total, logs: result.logs });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 71. Manually Record Audit Action
+app.post('/api/dashboard/audit-logs', (req, res) => {
+  try {
+    const { agentName, actionType, targetEntity, targetId, status, details, performedBy } = req.body;
+    if (!actionType) return res.status(400).json({ success: false, error: 'actionType is required' });
+
+    const record = logAuditAction({
+      agentName: agentName || 'System',
+      actionType,
+      targetEntity,
+      targetId,
+      status: status || 'success',
+      details,
+      performedBy: performedBy || 'administrator'
+    });
+
+    res.json({ success: true, log: record });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 72. Global System & Admin Settings
+app.get('/api/dashboard/settings', (req, res) => {
+  try {
+    const settings = getAdminSettings();
+    res.json({ success: true, settings });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 73. Update Global Admin Settings
+app.post('/api/dashboard/settings', (req, res) => {
+  try {
+    const settings = req.body;
+    const updated = updateAdminSettings(settings, 'administrator');
+    res.json({ success: true, settings: updated });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

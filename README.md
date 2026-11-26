@@ -247,3 +247,64 @@ Every prospect reply is classified by Gemini (with rule-based fallback) into exa
 | `POST /api/feedback/run-due` | `POST` | Execute due follow-ups immediately with guardrails |
 | `GET /api/feedback/high-value` | `GET` | List closing-ready high-value prospects for immediate sales action |
 | `GET /api/feedback/unresponsive` | `GET` | Surface unresponsive leads past threshold for gentle nurturing |
+
+---
+
+## 📊 Part 8: Global Gym Sales Dashboard & Command Center (Step 8)
+
+A unified executive command center and multi-agent operations hub without disturbing existing workflows.
+
+### 📈 1. Sixteen Mandatory Dashboard Widgets
+1. **Total Gyms Discovered**: Real-time count of gyms across India & international target markets.
+2. **Total Qualified Leads**: Leads meeting qualification criteria (`Qualified` or score $\ge 60$).
+3. **High-Priority Leads**: High-scoring leads (score $\ge 75$) primed for immediate outreach.
+4. **Leads with Verified WhatsApp**: Validated WhatsApp contacts ready for chat campaigns.
+5. **Leads with Verified Email**: Corporate and facility business email addresses.
+6. **Messages Sent**: Aggregated outbound volume across WhatsApp and Email.
+7. **WhatsApp Replies**: Inbound prospect chats received and routed.
+8. **Email Replies**: Inbound prospect email queries processed.
+9. **Interested Gym Owners**: Prospects exhibiting buying or demonstration interest.
+10. **Meetings Requested**: Prospect-initiated demonstration inquiries.
+11. **Meetings Scheduled**: Confirmed Google Meet sessions with synced calendar links.
+12. **Demonstrations Completed**: Conducted 1-on-1 walkthroughs.
+13. **Customer Feedback Received**: Completed post-demo review submissions.
+14. **Converted Customers**: Successfully closed gym software accounts.
+15. **Opt-Outs**: Unsubscribed or opted-out facilities permanently excluded from outreach.
+16. **Failed Messages**: Delivery errors, bouncebacks, or unreachable recipients.
+
+### 📉 2. Ten Analytical Sales Charts (Chart.js Engine)
+- **Country-Wise Leads**: Bar chart of lead distribution across target global markets.
+- **State-Wise Leads**: Regional market penetration (e.g. Maharashtra, Delhi, Karnataka, MP).
+- **City-Wise Leads**: Horizontal bar chart of top metropolitan hubs.
+- **Leads by Gym Category**: Segment share (CrossFit, chains, boutique, PT studios, independent).
+- **Outreach Performance**: Comparative breakdown of sent messages vs replies received.
+- **WhatsApp Response Rate**: Percentage reply performance on WhatsApp.
+- **Email Response Rate**: Percentage reply performance on Email.
+- **Interest Conversion Rate**: Percentage of contacted facilities that express interest.
+- **Meeting Conversion Rate**: Percentage of interested prospects that book a demonstration.
+- **Country-Wise Sales Performance**: Multi-metric pipeline by country (leads, qualified, contacted, interested).
+
+### 🤖 3. Multi-Agent Monitoring & Telemetry
+Live telemetry table tracking all 5 platform agents:
+* **Global Gym Research Agent**: Market discovery and business verification.
+* **WhatsApp AI Sales Agent**: Real-time conversation handling, objection handling, and pitch pacing.
+* **Autonomous Email Sales Agent**: Template building, brochure dispatch, and inbound classification.
+* **Google Calendar Meeting Scheduler**: Slot negotiation, Google Meet links, and `.ics` files.
+* **Customer Feedback & Follow-Up Agent**: 6-question reviews, promised callback tracker, and anti-spam limits.
+* **Telemetry Fields**: Running status (`Active`, `Paused`, `Stopped`), current task, last execution, next scheduled execution, tasks completed/failed, API errors, total execution time, and inline admin controls (`Start`, `Stop`, `Pause`, `Resume`).
+
+### 🛠️ 4. Admin Overrides & Immutable Audit Trail
+* **Global System Controls**: Administrators can adjust daily WhatsApp limits, email limits, cooldown intervals, and target countries.
+* **Audit Trail Engine**: Persists an immutable log of every autonomous action, status advance, and administrative override with timestamps and actor attribution.
+
+### Executive Dashboard REST Endpoints
+| Endpoint | Method | Description |
+|---|---|---|
+| `GET /api/dashboard/overview-stats` | `GET` | Returns all 16 executive sales KPI metrics |
+| `GET /api/dashboard/analytics` | `GET` | Returns all 10 analytical chart datasets |
+| `GET /api/dashboard/agents` | `GET` | Live telemetry for all 5 platform agents |
+| `POST /api/dashboard/agents/:agentName/action` | `POST` | Agent control action (`start`, `stop`, `pause`, `resume`) |
+| `GET /api/dashboard/audit-logs` | `GET` | Query and search the immutable audit trail |
+| `POST /api/dashboard/audit-logs` | `POST` | Log administrative or automated actions |
+| `GET /api/dashboard/settings` | `GET` | Retrieve global system and rate-limit settings |
+| `POST /api/dashboard/settings` | `POST` | Update global settings and record audit log |

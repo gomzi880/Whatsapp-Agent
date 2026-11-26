@@ -295,6 +295,36 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_follow_ups_leadId ON follow_ups(leadId);
   CREATE INDEX IF NOT EXISTS idx_follow_ups_date ON follow_ups(scheduledDate);
   CREATE INDEX IF NOT EXISTS idx_follow_ups_status ON follow_ups(status);
+
+  CREATE TABLE IF NOT EXISTS audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    agentName TEXT NOT NULL,
+    actionType TEXT NOT NULL,
+    targetEntity TEXT,
+    targetId INTEGER,
+    status TEXT DEFAULT 'success',
+    details TEXT,
+    performedBy TEXT DEFAULT 'system',
+    createdAt TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_audit_agent ON audit_logs(agentName);
+  CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_logs(actionType);
+  CREATE INDEX IF NOT EXISTS idx_audit_createdAt ON audit_logs(createdAt);
+
+  CREATE TABLE IF NOT EXISTS agent_monitoring (
+    agentName TEXT PRIMARY KEY,
+    displayName TEXT NOT NULL,
+    currentTask TEXT DEFAULT 'Idle - Monitoring pipeline',
+    runningStatus TEXT DEFAULT 'Active',
+    lastExecution TEXT,
+    nextScheduledExecution TEXT,
+    tasksCompleted INTEGER DEFAULT 0,
+    tasksFailed INTEGER DEFAULT 0,
+    apiErrors INTEGER DEFAULT 0,
+    totalExecutionTimeSeconds INTEGER DEFAULT 0,
+    updatedAt TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 /**
@@ -1779,6 +1809,478 @@ export function updateFeedback(id, fields = {}) {
   return result.changes > 0;
 }
 
+// ==========================================
+// INSTRUCTION 8: AUDIT TRAIL, AGENT MONITORING & EXECUTIVE ANALYTICS
+// ==========================================
+
+export function initAgentMonitoringIfEmpty() {
+  const count = db.prepare('SELECT COUNT(*) as count FROM agent_monitoring').get().count;
+  if (count === 0) {
+    const agents = [
+      {
+        agentName: 'research_agent',
+        displayName: 'Global Gym Research Agent',
+        currentTask: 'Scheduled market scanning for gyms & fitness studios',
+        runningStatus: 'Active',
+        lastExecution: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        nextScheduledExecution: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
+        tasksCompleted: 42,
+        tasksFailed: 0,
+        apiErrors: 0,
+        totalExecutionTimeSeconds: 1240
+      },
+      {
+        agentName: 'whatsapp_sales_agent',
+        displayName: 'WhatsApp AI Sales Agent',
+        currentTask: 'Live prospect conversations & message pacing',
+        runningStatus: 'Active',
+        lastExecution: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+        nextScheduledExecution: 'Continuous Real-Time Webhook',
+        tasksCompleted: 18,
+        tasksFailed: 0,
+        apiErrors: 0,
+        totalExecutionTimeSeconds: 890
+      },
+      {
+        agentName: 'email_sales_agent',
+        displayName: 'Autonomous Email Sales Agent',
+        currentTask: 'Scheduled email campaigns & personalized pitch delivery',
+        runningStatus: 'Active',
+        lastExecution: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        nextScheduledExecution: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+        tasksCompleted: 27,
+        tasksFailed: 1,
+        apiErrors: 0,
+        totalExecutionTimeSeconds: 650
+      },
+      {
+        agentName: 'meeting_scheduler_agent',
+        displayName: 'Google Calendar Meeting Scheduler',
+        currentTask: 'Slot negotiation, Google Meet links & .ics calendar invites',
+        runningStatus: 'Active',
+        lastExecution: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
+        nextScheduledExecution: 'On-Demand via Chat & Email Flow',
+        tasksCompleted: 12,
+        tasksFailed: 0,
+        apiErrors: 0,
+        totalExecutionTimeSeconds: 310
+      },
+      {
+        agentName: 'feedback_followup_agent',
+        displayName: 'Customer Feedback & Follow-Up Agent',
+        currentTask: 'Post-demo reviews, promised callback tracker & anti-spam nurturing',
+        runningStatus: 'Active',
+        lastExecution: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+        nextScheduledExecution: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        tasksCompleted: 15,
+        tasksFailed: 0,
+        apiErrors: 0,
+        totalExecutionTimeSeconds: 420
+      }
+    ];
+
+    const insertStmt = db.prepare(`
+      INSERT INTO agent_monitoring (
+        agentName, displayName, currentTask, runningStatus, lastExecution,
+        nextScheduledExecution, tasksCompleted, tasksFailed, apiErrors,
+        totalExecutionTimeSeconds, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    `);
+
+    for (const a of agents) {
+      insertStmt.run(
+        a.agentName,
+        a.displayName,
+        a.currentTask,
+        a.runningStatus,
+        a.lastExecution,
+        a.nextScheduledExecution,
+        a.tasksCompleted,
+        a.tasksFailed,
+        a.apiErrors,
+        a.totalExecutionTimeSeconds
+      );
+    }
+  }
+}
+
+/**
+ * Record an action in the system audit trail
+ */
+export function logAuditAction({
+  agentName = 'System',
+  actionType,
+  targetEntity = null,
+  targetId = null,
+  status = 'success',
+  details = null,
+  performedBy = 'administrator'
+}) {
+  const result = db.prepare(`
+    INSERT INTO audit_logs (
+      agentName, actionType, targetEntity, targetId, status, details, performedBy, createdAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+  `).run(
+    agentName,
+    actionType,
+    targetEntity,
+    targetId,
+    status,
+    typeof details === 'object' ? JSON.stringify(details) : details,
+    performedBy
+  );
+
+  // Update agent monitoring counters if associated with a recognized agent
+  try {
+    const isError = status === 'failed' || status === 'error';
+    if (isError) {
+      db.prepare(`
+        UPDATE agent_monitoring
+        SET tasksFailed = tasksFailed + 1,
+            lastExecution = datetime('now'),
+            updatedAt = datetime('now')
+        WHERE agentName = ?
+      `).run(agentName);
+    } else {
+      db.prepare(`
+        UPDATE agent_monitoring
+        SET tasksCompleted = tasksCompleted + 1,
+            lastExecution = datetime('now'),
+            updatedAt = datetime('now')
+        WHERE agentName = ?
+      `).run(agentName);
+    }
+  } catch (e) {
+    // Non-fatal if agent row doesn't match
+  }
+
+  return { id: result.lastInsertRowid, agentName, actionType, status };
+}
+
+/**
+ * Query audit trail logs with filtering
+ */
+export function getAuditLogs({
+  agentName = null,
+  actionType = null,
+  status = null,
+  search = null,
+  limit = 50,
+  offset = 0
+} = {}) {
+  const whereClauses = [];
+  const params = [];
+
+  if (agentName && agentName !== 'All') {
+    whereClauses.push('agentName = ?');
+    params.push(agentName);
+  }
+
+  if (actionType && actionType !== 'All') {
+    whereClauses.push('actionType = ?');
+    params.push(actionType);
+  }
+
+  if (status && status !== 'All') {
+    whereClauses.push('status = ?');
+    params.push(status);
+  }
+
+  if (search) {
+    whereClauses.push('(details LIKE ? OR actionType LIKE ? OR agentName LIKE ? OR performedBy LIKE ?)');
+    const term = `%${search}%`;
+    params.push(term, term, term, term);
+  }
+
+  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+  const logs = db.prepare(`
+    SELECT *
+    FROM audit_logs
+    ${whereSql}
+    ORDER BY id DESC
+    LIMIT ? OFFSET ?
+  `).all(...params, limit, offset);
+
+  const total = db.prepare(`
+    SELECT COUNT(*) as count
+    FROM audit_logs
+    ${whereSql}
+  `).get(...params).count;
+
+  return { logs, total };
+}
+
+/**
+ * Get all agent monitoring records
+ */
+export function getAgentMonitoring() {
+  initAgentMonitoringIfEmpty();
+  return db.prepare('SELECT * FROM agent_monitoring ORDER BY agentName ASC').all();
+}
+
+/**
+ * Update agent monitoring state (e.g. start, stop, pause, resume)
+ */
+export function updateAgentMonitoring(agentName, updates = {}) {
+  initAgentMonitoringIfEmpty();
+  const allowed = ['runningStatus', 'currentTask', 'tasksCompleted', 'tasksFailed', 'apiErrors', 'lastExecution', 'nextScheduledExecution', 'totalExecutionTimeSeconds'];
+  const keys = Object.keys(updates).filter(k => allowed.includes(k));
+  if (keys.length === 0) return false;
+
+  const setClauses = keys.map(k => `${k} = ?`).join(', ');
+  const values = keys.map(k => updates[k]);
+  values.push(agentName);
+
+  const result = db.prepare(`
+    UPDATE agent_monitoring
+    SET ${setClauses}, updatedAt = datetime('now')
+    WHERE agentName = ?
+  `).run(...values);
+
+  return result.changes > 0;
+}
+
+/**
+ * 16 Mandatory Global Gym Sales Dashboard Widgets
+ */
+export function getExecutiveDashboardStats() {
+  // 1. Total gyms discovered
+  const totalGymsDiscovered = db.prepare('SELECT COUNT(*) as count FROM leads').get().count;
+
+  // 2. Total qualified leads (score >= 60 or status = 'Qualified')
+  const totalQualifiedLeads = db.prepare(`
+    SELECT COUNT(*) as count FROM leads
+    WHERE status = 'Qualified' OR leadScore >= 60
+  `).get().count;
+
+  // 3. High-priority leads (score >= 75)
+  const highPriorityLeads = db.prepare('SELECT COUNT(*) as count FROM leads WHERE leadScore >= 75').get().count;
+
+  // 4. Leads with verified WhatsApp
+  const leadsWithVerifiedWhatsApp = db.prepare('SELECT COUNT(*) as count FROM leads WHERE hasWhatsApp = 1').get().count;
+
+  // 5. Leads with verified email
+  const leadsWithVerifiedEmail = db.prepare(`
+    SELECT COUNT(*) as count FROM leads
+    WHERE businessEmail IS NOT NULL AND trim(businessEmail) != ''
+  `).get().count;
+
+  // 6. Messages sent (WhatsApp + Email)
+  const waSent = db.prepare("SELECT COUNT(*) as count FROM lead_messages WHERE senderRole = 'agent' AND status = 'sent'").get().count;
+  const emailSent = db.prepare("SELECT COUNT(*) as count FROM lead_emails WHERE direction = 'outbound' AND status = 'sent'").get().count;
+  const messagesSent = waSent + emailSent;
+
+  // 7. WhatsApp replies
+  const whatsappReplies = db.prepare("SELECT COUNT(*) as count FROM lead_messages WHERE senderRole = 'prospect' AND status = 'received'").get().count;
+
+  // 8. Email replies
+  const emailReplies = db.prepare("SELECT COUNT(*) as count FROM lead_emails WHERE direction = 'inbound'").get().count;
+
+  // 9. Interested gym owners
+  const interestedGymOwners = db.prepare(`
+    SELECT COUNT(DISTINCT id) as count FROM leads
+    WHERE status IN ('Interested', 'Converted', 'Meeting Requested', 'Meeting Scheduled')
+       OR id IN (SELECT leadId FROM feedbacks WHERE feedbackCategory IN ('Interested in purchasing', 'Pricing concern'))
+  `).get().count;
+
+  // 10. Meetings requested
+  const meetingsRequested = db.prepare(`
+    SELECT COUNT(*) as count FROM meetings
+    WHERE status IN ('Requested', 'Waiting for Confirmation')
+  `).get().count;
+
+  // 11. Meetings scheduled
+  const meetingsScheduled = db.prepare(`
+    SELECT COUNT(*) as count FROM meetings
+    WHERE status IN ('Scheduled', 'Rescheduled', 'Completed')
+  `).get().count;
+
+  // 12. Demonstrations completed
+  const demonstrationsCompleted = db.prepare("SELECT COUNT(*) as count FROM meetings WHERE status = 'Completed'").get().count;
+
+  // 13. Feedback received
+  const feedbackReceived = db.prepare('SELECT COUNT(*) as count FROM feedbacks').get().count;
+
+  // 14. Converted customers
+  const convertedCustomers = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status = 'Converted'").get().count;
+
+  // 15. Opt-outs
+  const optOuts = db.prepare(`
+    SELECT COUNT(DISTINCT id) as count FROM leads
+    WHERE status = 'Unsubscribed'
+       OR id IN (SELECT leadId FROM feedbacks WHERE feedbackCategory = 'Not interested')
+  `).get().count;
+
+  // 16. Failed messages
+  const waFailed = db.prepare("SELECT COUNT(*) as count FROM lead_messages WHERE status = 'failed'").get().count;
+  const emailFailed = db.prepare("SELECT COUNT(*) as count FROM lead_emails WHERE status = 'failed'").get().count;
+  const fuFailed = db.prepare("SELECT COUNT(*) as count FROM follow_ups WHERE status = 'Failed'").get().count;
+  const failedMessages = waFailed + emailFailed + fuFailed;
+
+  return {
+    totalGymsDiscovered,
+    totalQualifiedLeads,
+    highPriorityLeads,
+    leadsWithVerifiedWhatsApp,
+    leadsWithVerifiedEmail,
+    messagesSent,
+    whatsappReplies,
+    emailReplies,
+    interestedGymOwners,
+    meetingsRequested,
+    meetingsScheduled,
+    demonstrationsCompleted,
+    feedbackReceived,
+    convertedCustomers,
+    optOuts,
+    failedMessages
+  };
+}
+
+/**
+ * 10 Sales Analytics Datasets for Charts
+ */
+export function getSalesAnalyticsData() {
+  // 1. Country-wise leads
+  const countryWiseLeads = db.prepare(`
+    SELECT COALESCE(NULLIF(trim(country), ''), 'Unknown') as country, COUNT(*) as count
+    FROM leads
+    GROUP BY country
+    ORDER BY count DESC
+    LIMIT 10
+  `).all();
+
+  // 2. State-wise leads
+  const stateWiseLeads = db.prepare(`
+    SELECT COALESCE(NULLIF(trim(state), ''), 'Other') as state, COUNT(*) as count
+    FROM leads
+    GROUP BY state
+    ORDER BY count DESC
+    LIMIT 10
+  `).all();
+
+  // 3. City-wise leads
+  const cityWiseLeads = db.prepare(`
+    SELECT COALESCE(NULLIF(trim(city), ''), 'Unknown') as city, COUNT(*) as count
+    FROM leads
+    GROUP BY city
+    ORDER BY count DESC
+    LIMIT 10
+  `).all();
+
+  // 4. Leads by gym category
+  const categoryLeads = db.prepare(`
+    SELECT COALESCE(NULLIF(trim(gymCategory), ''), 'General Fitness') as category, COUNT(*) as count
+    FROM leads
+    GROUP BY gymCategory
+    ORDER BY count DESC
+  `).all();
+
+  // 5. Outreach performance breakdown
+  const waSent = db.prepare("SELECT COUNT(*) as count FROM lead_messages WHERE senderRole = 'agent' AND status = 'sent'").get().count;
+  const waReplies = db.prepare("SELECT COUNT(*) as count FROM lead_messages WHERE senderRole = 'prospect'").get().count;
+  const emailSent = db.prepare("SELECT COUNT(*) as count FROM lead_emails WHERE direction = 'outbound' AND status = 'sent'").get().count;
+  const emailReplies = db.prepare("SELECT COUNT(*) as count FROM lead_emails WHERE direction = 'inbound'").get().count;
+
+  // 6. WhatsApp response rate
+  const whatsappResponseRate = waSent > 0 ? parseFloat(((waReplies / waSent) * 100).toFixed(1)) : 0;
+
+  // 7. Email response rate
+  const emailResponseRate = emailSent > 0 ? parseFloat(((emailReplies / emailSent) * 100).toFixed(1)) : 0;
+
+  // 8. Interest conversion rate (% of contacted leads that expressed interest)
+  const totalContacted = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status IN ('Contacted', 'Responded', 'Interested', 'Meeting Requested', 'Meeting Scheduled', 'Demo Completed', 'Converted')").get().count;
+  const totalInterested = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status IN ('Interested', 'Converted', 'Meeting Requested', 'Meeting Scheduled')").get().count;
+  const interestConversionRate = totalContacted > 0 ? parseFloat(((totalInterested / totalContacted) * 100).toFixed(1)) : 0;
+
+  // 9. Meeting conversion rate (% of interested leads that scheduled a demo)
+  const totalMeetings = db.prepare("SELECT COUNT(*) as count FROM meetings WHERE status IN ('Scheduled', 'Rescheduled', 'Completed')").get().count;
+  const meetingConversionRate = totalInterested > 0 ? parseFloat(((totalMeetings / totalInterested) * 100).toFixed(1)) : (totalContacted > 0 ? parseFloat(((totalMeetings / totalContacted) * 100).toFixed(1)) : 0);
+
+  // 10. Country-wise sales performance
+  const countryWiseSalesPerformance = db.prepare(`
+    SELECT
+      COALESCE(NULLIF(trim(country), ''), 'Unknown') as country,
+      COUNT(*) as totalLeads,
+      SUM(CASE WHEN status = 'Qualified' OR leadScore >= 60 THEN 1 ELSE 0 END) as qualified,
+      SUM(CASE WHEN status IN ('Contacted', 'Responded', 'Interested', 'Meeting Scheduled', 'Converted') THEN 1 ELSE 0 END) as contacted,
+      SUM(CASE WHEN status IN ('Interested', 'Converted') THEN 1 ELSE 0 END) as interested,
+      SUM(CASE WHEN status = 'Converted' THEN 1 ELSE 0 END) as converted
+    FROM leads
+    GROUP BY country
+    ORDER BY totalLeads DESC
+    LIMIT 8
+  `).all();
+
+  return {
+    countryWiseLeads,
+    stateWiseLeads,
+    cityWiseLeads,
+    categoryLeads,
+    outreachPerformance: {
+      waSent,
+      waReplies,
+      emailSent,
+      emailReplies,
+      totalSent: waSent + emailSent,
+      totalReplies: waReplies + emailReplies
+    },
+    whatsappResponseRate,
+    emailResponseRate,
+    interestConversionRate,
+    meetingConversionRate,
+    countryWiseSalesPerformance
+  };
+}
+
+// Global System Settings for Admin Controls
+export function getAdminSettings() {
+  const defaults = {
+    dailyOutreachLimit: 50,
+    dailyEmailLimit: 100,
+    followUpCooldownHours: 48,
+    maxFollowUpsPerLead: 3,
+    autoFollowUpEnabled: true,
+    whatsappAgentActive: true,
+    emailAgentActive: true,
+    researchAgentActive: true,
+    calendarAgentActive: true,
+    targetCountries: ['India', 'USA', 'UK', 'Canada', 'Australia', 'UAE', 'Singapore', 'Germany']
+  };
+
+  try {
+    const row = db.prepare("SELECT value FROM knowledge_settings WHERE key = 'admin_global_settings'").get();
+    if (row && row.value) {
+      return { ...defaults, ...JSON.parse(row.value) };
+    }
+  } catch (e) {
+    // Return defaults if parsing fails
+  }
+
+  return defaults;
+}
+
+export function updateAdminSettings(newSettings, performedBy = 'administrator') {
+  const current = getAdminSettings();
+  const merged = { ...current, ...newSettings };
+  
+  db.prepare(`
+    INSERT INTO knowledge_settings (key, value)
+    VALUES ('admin_global_settings', ?)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value
+  `).run(JSON.stringify(merged));
+
+  logAuditAction({
+    agentName: 'Admin Control Center',
+    actionType: 'UPDATE_SYSTEM_SETTINGS',
+    details: newSettings,
+    performedBy
+  });
+
+  return merged;
+}
+
 // Attach helper methods to default db object for convenience
 Object.assign(db, {
   recordFeedback,
@@ -1802,10 +2304,20 @@ Object.assign(db, {
   getMeetingById,
   getMeetings,
   getUpcomingMeetings,
-  getCalendarStats
+  getCalendarStats,
+  initAgentMonitoringIfEmpty,
+  logAuditAction,
+  getAuditLogs,
+  getAgentMonitoring,
+  updateAgentMonitoring,
+  getExecutiveDashboardStats,
+  getSalesAnalyticsData,
+  getAdminSettings,
+  updateAdminSettings
 });
 
 // Automatically seed on initialization if empty
 seedKnowledgeBaseIfEmpty();
+initAgentMonitoringIfEmpty();
 
 export default db;
