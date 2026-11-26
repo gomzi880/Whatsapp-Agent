@@ -50,6 +50,9 @@
         <button onclick="switchTab('calendar')" id="tab-calendar-btn" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
           <i class="fa-solid fa-calendar-check mr-1.5 text-blue-400"></i> Calendar &amp; Scheduler
         </button>
+        <button onclick="switchTab('feedback')" id="tab-feedback-btn" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
+          <i class="fa-solid fa-comments mr-1.5 text-rose-400"></i> Feedback &amp; Follow-Ups
+        </button>
       </nav>
 
       <div class="flex items-center space-x-2 text-xs">
@@ -973,6 +976,224 @@
 
     </div>
 
+    <!-- ======================================================== -->
+    <!-- TAB 7: CUSTOMER FEEDBACK & FOLLOW-UP AGENT HUB           -->
+    <!-- ======================================================== -->
+    <div id="tab-feedback" class="hidden space-y-5">
+
+      <!-- Header & Intro -->
+      <div class="bg-gradient-to-r from-rose-900 via-slate-900 to-indigo-950 rounded-2xl p-6 text-white shadow-lg border border-rose-800/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-rose-500/20 text-rose-300 border border-rose-400/30">
+              AI Sales Automation &amp; Nurturing
+            </span>
+            <span class="text-xs text-slate-400">• Instruction 7</span>
+          </div>
+          <h2 class="text-xl font-bold mt-1 text-white flex items-center">
+            <i class="fa-solid fa-comments text-rose-400 mr-2.5"></i> Customer Feedback &amp; Follow-Up Agent
+          </h2>
+          <p class="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+            Automated post-demo feedback requests, AI categorization into 7 sentiment channels, promised callback date tracker (strictly text/email, no voice calls), high-value buyer alerts, and anti-spam frequency limits.
+          </p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="openRequestFeedbackModal()" class="bg-rose-600 hover:bg-rose-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm flex items-center">
+            <i class="fa-solid fa-paper-plane mr-1.5"></i> Request Feedback
+          </button>
+          <button onclick="openLogFeedbackModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center">
+            <i class="fa-solid fa-plus mr-1.5"></i> Log / Test Feedback
+          </button>
+          <button onclick="triggerDueFollowUpsNow()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow-sm flex items-center">
+            <i class="fa-solid fa-bolt mr-1.5"></i> Run Due Follow-Ups
+          </button>
+        </div>
+      </div>
+
+      <!-- Feedback Metrics Row -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
+            Total Feedback <i class="fa-solid fa-comment-dots text-slate-400"></i>
+          </div>
+          <div id="stat-fb-total" class="text-2xl font-black text-slate-900 mt-1.5">0</div>
+          <div class="text-[10px] text-slate-400 mt-1">Post-demo responses</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-rose-200 shadow-sm bg-gradient-to-br from-rose-50/50 to-white">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-rose-700 flex items-center justify-between">
+            High-Value Buyers <i class="fa-solid fa-fire text-rose-500"></i>
+          </div>
+          <div id="stat-fb-highvalue" class="text-2xl font-black text-rose-600 mt-1.5">0</div>
+          <div class="text-[10px] text-rose-600/80 mt-1">Ready to purchase / quote</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-emerald-200 shadow-sm bg-gradient-to-br from-emerald-50/50 to-white">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-emerald-700 flex items-center justify-between">
+            Positive Feedback <i class="fa-solid fa-thumbs-up text-emerald-500"></i>
+          </div>
+          <div id="stat-fb-positive" class="text-2xl font-black text-emerald-600 mt-1.5">0</div>
+          <div class="text-[10px] text-emerald-600/80 mt-1">Impressed with GymStack</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-amber-200 shadow-sm bg-gradient-to-br from-amber-50/50 to-white">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-amber-700 flex items-center justify-between">
+            Pricing Concerns <i class="fa-solid fa-tags text-amber-500"></i>
+          </div>
+          <div id="stat-fb-pricing" class="text-2xl font-black text-amber-600 mt-1.5">0</div>
+          <div class="text-[10px] text-amber-600/80 mt-1">Negotiation / discount</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-indigo-200 shadow-sm bg-gradient-to-br from-indigo-50/50 to-white">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-indigo-700 flex items-center justify-between">
+            Feature / Tech <i class="fa-solid fa-lightbulb text-indigo-500"></i>
+          </div>
+          <div id="stat-fb-features" class="text-2xl font-black text-indigo-600 mt-1.5">0</div>
+          <div class="text-[10px] text-indigo-600/80 mt-1">Integrations &amp; requests</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
+            Pending Follow-Ups <i class="fa-solid fa-clock text-slate-400"></i>
+          </div>
+          <div id="stat-fb-pending" class="text-2xl font-black text-blue-600 mt-1.5">0</div>
+          <div class="text-[10px] text-slate-400 mt-1">Scheduled in pipeline</div>
+        </div>
+      </div>
+
+      <!-- High-Value Prospects Live Alert Banner -->
+      <div id="high-value-prospects-container" class="hidden bg-gradient-to-r from-amber-50 via-rose-50 to-orange-50 border border-amber-300 rounded-2xl p-4 shadow-sm space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
+            <h3 class="text-xs font-bold text-rose-900 uppercase tracking-wider flex items-center">
+              🔥 Action Required: High-Value Closing Prospects Detected
+            </h3>
+          </div>
+          <span class="text-[11px] text-amber-800 font-medium">Administrator Notified (sales@gymstack.in)</span>
+        </div>
+        <div id="high-value-prospects-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Feedbacks Management & Filter Table -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-0">
+        
+        <!-- Filter Header -->
+        <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <div class="flex items-center space-x-3 w-full md:w-auto">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center">
+              <i class="fa-solid fa-list-check text-rose-600 mr-2"></i> Prospect Feedback Log
+            </h3>
+            <span id="feedback-count-badge" class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-200 text-slate-700">0 records</span>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <!-- Category Filter -->
+            <select id="filter-fb-category" onchange="loadFeedbacks()" class="text-xs rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 font-medium outline-none focus:ring-2 focus:ring-rose-500">
+              <option value="">All Categories (7 Types)</option>
+              <option value="Positive feedback">Positive feedback</option>
+              <option value="Interested in purchasing">Interested in purchasing</option>
+              <option value="Pricing concern">Pricing concern</option>
+              <option value="Feature request">Feature request</option>
+              <option value="Technical concern">Technical concern</option>
+              <option value="Needs more time">Needs more time</option>
+              <option value="Not interested">Not interested</option>
+            </select>
+
+            <!-- Sentiment Filter -->
+            <select id="filter-fb-sentiment" onchange="loadFeedbacks()" class="text-xs rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 font-medium outline-none focus:ring-2 focus:ring-rose-500">
+              <option value="">All Sentiments</option>
+              <option value="Positive">Positive</option>
+              <option value="Neutral">Neutral</option>
+              <option value="Negative">Negative</option>
+            </select>
+
+            <!-- Search -->
+            <div class="relative">
+              <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2 text-slate-400 text-xs"></i>
+              <input id="filter-fb-search" oninput="debounceFeedbackSearch()" type="text" placeholder="Search gym or thoughts..." class="text-xs rounded-lg border border-slate-300 bg-white pl-7 pr-3 py-1.5 outline-none focus:ring-2 focus:ring-rose-500 w-48">
+            </div>
+
+            <!-- High Value Checkbox -->
+            <label class="flex items-center space-x-1.5 text-xs text-slate-700 font-medium cursor-pointer bg-white px-2.5 py-1.5 rounded-lg border border-slate-300 select-none">
+              <input id="filter-fb-highvalue" type="checkbox" onchange="loadFeedbacks()" class="rounded text-rose-600 focus:ring-rose-500">
+              <span>High-Value Only</span>
+            </label>
+
+            <button onclick="resetFeedbackFilters()" class="text-xs text-slate-500 hover:text-slate-800 px-2 py-1.5 font-semibold">
+              Reset
+            </button>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-100/75 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[10px] tracking-wider">
+                <th class="px-4 py-2.5">Gym / Lead</th>
+                <th class="px-4 py-2.5">Category</th>
+                <th class="px-4 py-2.5">Sentiment &amp; Rating</th>
+                <th class="px-4 py-2.5">Prospect Verbatim Response</th>
+                <th class="px-4 py-2.5">Liked / Improvements</th>
+                <th class="px-4 py-2.5 text-center">Channel</th>
+                <th class="px-4 py-2.5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="feedbacks-table-body" class="divide-y divide-slate-100 font-medium">
+              <tr><td colspan="7" class="text-center py-8 text-slate-400">Loading customer feedbacks...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Follow-Up Automation & Promised Callback Tracker -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-0">
+        
+        <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center">
+              <i class="fa-solid fa-clock-rotate-left text-indigo-600 mr-2"></i> Automated Follow-Up Pipeline &amp; Callback Calendar
+            </h3>
+            <p class="text-[11px] text-slate-500 mt-0.5">
+              Strictly enforced guardrails: Max 3 follow-ups in 14 days, min 48h cooldown, and <strong>promoted callbacks handled via text/email reminder only (NO voice calls)</strong>.
+            </p>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <select id="filter-fu-status" onchange="loadFollowUps()" class="text-xs rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 font-medium outline-none">
+              <option value="">All Follow-Up Statuses</option>
+              <option value="Pending" selected>Pending</option>
+              <option value="Sent">Sent</option>
+              <option value="Cancelled">Cancelled</option>
+              <option value="Failed">Failed</option>
+            </select>
+            <button onclick="openScheduleFollowUpModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center">
+              <i class="fa-solid fa-calendar-plus mr-1.5 text-rose-400"></i> Schedule Custom Follow-Up
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-100/75 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[10px] tracking-wider">
+                <th class="px-4 py-2.5">Lead / Facility</th>
+                <th class="px-4 py-2.5">Type &amp; Purpose</th>
+                <th class="px-4 py-2.5">Scheduled Date &amp; Time</th>
+                <th class="px-4 py-2.5">Promised Callback Note</th>
+                <th class="px-4 py-2.5 text-center">Attempt</th>
+                <th class="px-4 py-2.5 text-center">Channel</th>
+                <th class="px-4 py-2.5 text-center">Status</th>
+                <th class="px-4 py-2.5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="followups-table-body" class="divide-y divide-slate-100 font-medium">
+              <tr><td colspan="8" class="text-center py-8 text-slate-400">Loading scheduled follow-ups...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
   </main>
 
   <!-- ======================================================== -->
@@ -1537,6 +1758,200 @@
     </div>
   </div>
 
+  <!-- ======================================================== -->
+  <!-- MODAL: REQUEST FEEDBACK                                   -->
+  <!-- ======================================================== -->
+  <div id="request-feedback-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <div class="flex items-center space-x-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+          <h3 class="text-sm font-bold text-slate-900">Send Post-Demo Feedback Request</h3>
+        </div>
+        <button onclick="closeRequestFeedbackModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Target Lead ID</label>
+          <input type="number" id="rf-lead-id" placeholder="e.g. 1" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Associated Meeting ID (Optional)</label>
+          <input type="number" id="rf-meeting-id" placeholder="e.g. 1" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Preferred Channel</label>
+          <select id="rf-channel" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+            <option value="whatsapp">WhatsApp (Instant Messaging)</option>
+            <option value="email">Email (Rich HTML Questionnaire)</option>
+          </select>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+          <div class="font-bold text-slate-800 text-[11px] flex items-center">
+            <i class="fa-solid fa-clipboard-question text-rose-500 mr-1.5"></i> Included Questions (6 Standard Questions)
+          </div>
+          <ol class="list-decimal list-inside space-y-1 text-[11px] text-slate-600 font-medium">
+            <li>How was your Gym Stack demonstration?</li>
+            <li>Which features did you like most?</li>
+            <li>Which features would you like to improve?</li>
+            <li>Do you have any questions?</li>
+            <li>Are you interested in purchasing Gym Stack?</li>
+            <li>Would you like to discuss pricing?</li>
+          </ol>
+        </div>
+
+        <div class="p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-[11px] text-blue-900">
+          <i class="fa-solid fa-shield-halved mr-1 text-blue-600"></i>
+          <strong>Anti-Spam Guardrail:</strong> Will automatically check opt-out status and enforce max 3 follow-ups within 14 days and 48-hour cooldown.
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+        <button onclick="closeRequestFeedbackModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+        <button id="btn-submit-rf" onclick="submitFeedbackRequest()" class="px-4 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-lg shadow-sm">
+          <i class="fa-solid fa-paper-plane mr-1.5"></i> Dispatch Feedback Request
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: LOG / TEST FEEDBACK RESPONSE                      -->
+  <!-- ======================================================== -->
+  <div id="log-feedback-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <div class="flex items-center space-x-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+          <h3 class="text-sm font-bold text-slate-900">Log / Classify Prospect Feedback Response</h3>
+        </div>
+        <button onclick="closeLogFeedbackModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Lead ID (Optional)</label>
+            <input type="number" id="lf-lead-id" placeholder="e.g. 1" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Channel</label>
+            <select id="lf-channel" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+              <option value="whatsapp">WhatsApp</option>
+              <option value="email">Email</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Gym Name (If no Lead ID)</label>
+          <input type="text" id="lf-gym-name" placeholder="e.g. Gold's Gym South" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Prospect Response Text</label>
+          <textarea id="lf-response-text" rows="4" placeholder="e.g. We really liked the attendance feature and reports. But is there a discount for annual payment? Can you message me next Monday?" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium"></textarea>
+        </div>
+
+        <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-3 text-[11px] text-indigo-900 space-y-1">
+          <div class="font-bold flex items-center">
+            <i class="fa-solid fa-microchip mr-1.5 text-indigo-600"></i> AI Intelligence Actions:
+          </div>
+          <p>• Categorizes response into 1 of 7 mandatory categories.</p>
+          <p>• If <strong>Interested in purchasing</strong> or <strong>Pricing concern</strong>, flags High-Value and alerts admin.</p>
+          <p>• If <strong>Needs more time</strong> or <strong>Promised callback date</strong>, schedules a text reminder (no phone calls).</p>
+          <p>• If <strong>Not interested</strong>, immediately sets lead to Unsubscribed and halts outreach.</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+        <button onclick="closeLogFeedbackModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+        <button id="btn-submit-lf" onclick="submitLogFeedback()" class="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm">
+          <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> Process &amp; Classify
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: SCHEDULE CUSTOM FOLLOW-UP                          -->
+  <!-- ======================================================== -->
+  <div id="schedule-followup-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <div class="flex items-center space-x-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+          <h3 class="text-sm font-bold text-slate-900">Schedule Custom Follow-Up / Promised Callback</h3>
+        </div>
+        <button onclick="closeScheduleFollowUpModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Lead ID *</label>
+          <input type="number" id="sfu-lead-id" placeholder="e.g. 1" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Follow-Up Type</label>
+            <select id="sfu-type" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+              <option value="Demo Feedback">Demo Feedback</option>
+              <option value="Promised Callback" selected>Promised Callback</option>
+              <option value="Meeting Reminder">Meeting Reminder</option>
+              <option value="General Check-in">General Check-in</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Channel</label>
+            <select id="sfu-channel" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+              <option value="whatsapp">WhatsApp</option>
+              <option value="email">Email</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Scheduled Date *</label>
+            <input type="date" id="sfu-date" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Scheduled Time</label>
+            <select id="sfu-time" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+              <option value="10:00 AM">10:00 AM</option>
+              <option value="11:00 AM" selected>11:00 AM</option>
+              <option value="02:30 PM">02:30 PM</option>
+              <option value="04:00 PM">04:00 PM</option>
+              <option value="06:00 PM">06:00 PM</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Promised Callback Note / Reason</label>
+          <input type="text" id="sfu-note" placeholder="e.g. Prospect asked to ping next Tuesday regarding pricing" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+        </div>
+
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-900">
+          <i class="fa-solid fa-triangle-exclamation mr-1 text-amber-600"></i>
+          <strong>CRITICAL REQUIREMENT:</strong> The agent remembers promised callback dates <strong>without making phone calls</strong>. When due, this triggers a courteous text/WhatsApp or email check-in only.
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+        <button onclick="closeScheduleFollowUpModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+        <button id="btn-submit-sfu" onclick="submitScheduleFollowUp()" class="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm">
+          <i class="fa-solid fa-calendar-check mr-1.5"></i> Schedule Follow-Up
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Client-Side Scripts -->
   <script>
     let locationData = {};
@@ -1569,6 +1984,10 @@
       await loadCalendarStats();
       await loadUpcomingMeetings();
       await loadMeetings();
+      await loadFeedbackStats();
+      await loadFeedbacks();
+      await loadFollowUps();
+      await loadHighValueProspects();
     });
 
     function switchTab(tab) {
@@ -1579,6 +1998,7 @@
       document.getElementById('tab-outreach').classList.toggle('hidden', tab !== 'outreach');
       document.getElementById('tab-email').classList.toggle('hidden', tab !== 'email');
       document.getElementById('tab-calendar').classList.toggle('hidden', tab !== 'calendar');
+      document.getElementById('tab-feedback').classList.toggle('hidden', tab !== 'feedback');
 
       const btnResearch = document.getElementById('tab-research-btn');
       const btnLeads = document.getElementById('tab-leads-btn');
@@ -1586,6 +2006,7 @@
       const btnOutreach = document.getElementById('tab-outreach-btn');
       const btnEmail = document.getElementById('tab-email-btn');
       const btnCalendar = document.getElementById('tab-calendar-btn');
+      const btnFeedback = document.getElementById('tab-feedback-btn');
 
       btnResearch.className = tab === 'research' 
         ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all'
@@ -1611,6 +2032,10 @@
         ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all'
         : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
 
+      btnFeedback.className = tab === 'feedback'
+        ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-rose-600 text-white shadow transition-all'
+        : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
+
       if (tab === 'email') {
         loadEmailStats();
         loadEmailCampaigns();
@@ -1620,6 +2045,12 @@
         loadCalendarStats();
         loadUpcomingMeetings();
         loadMeetings();
+      }
+      if (tab === 'feedback') {
+        loadFeedbackStats();
+        loadFeedbacks();
+        loadFollowUps();
+        loadHighValueProspects();
       }
     }
 
@@ -1646,6 +2077,12 @@
         loadCalendarStats();
         loadUpcomingMeetings();
         loadMeetings();
+      }
+      if (activeTab === 'feedback') {
+        loadFeedbackStats();
+        loadFeedbacks();
+        loadFollowUps();
+        loadHighValueProspects();
       }
     }
 
@@ -3450,6 +3887,424 @@ Would you be open to seeing a quick 5-minute product walkthrough or testing our 
           await loadMeetings();
         } else {
           alert('Status update failed: ' + data.error);
+        }
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    // ==========================================
+    // FEEDBACK & FOLLOW-UP CLIENT FUNCTIONS
+    // ==========================================
+
+    let feedbackSearchTimeout = null;
+
+    function debounceFeedbackSearch() {
+      clearTimeout(feedbackSearchTimeout);
+      feedbackSearchTimeout = setTimeout(() => {
+        loadFeedbacks();
+      }, 350);
+    }
+
+    function resetFeedbackFilters() {
+      document.getElementById('filter-fb-category').value = '';
+      document.getElementById('filter-fb-sentiment').value = '';
+      document.getElementById('filter-fb-search').value = '';
+      document.getElementById('filter-fb-highvalue').checked = false;
+      loadFeedbacks();
+    }
+
+    async function loadFeedbackStats() {
+      try {
+        const res = await fetch('/api/feedback/stats');
+        const data = await res.json();
+        if (data.success && data.stats) {
+          const s = data.stats;
+          document.getElementById('stat-fb-total').textContent = s.totalFeedback || 0;
+          document.getElementById('stat-fb-highvalue').textContent = s.highValueCount || 0;
+          document.getElementById('stat-fb-positive').textContent = s.positiveFeedback || 0;
+          document.getElementById('stat-fb-pricing').textContent = s.pricingConcerns || 0;
+          document.getElementById('stat-fb-features').textContent = (s.featureRequests || 0) + (s.technicalConcerns || 0);
+          document.getElementById('stat-fb-pending').textContent = s.pendingFollowUps || 0;
+        }
+      } catch (e) {
+        console.warn('Error loading feedback stats:', e);
+      }
+    }
+
+    async function loadHighValueProspects() {
+      try {
+        const res = await fetch('/api/feedback/high-value');
+        const data = await res.json();
+        const container = document.getElementById('high-value-prospects-container');
+        const list = document.getElementById('high-value-prospects-list');
+
+        if (data.success && data.prospects && data.prospects.length > 0) {
+          container.classList.remove('hidden');
+          list.innerHTML = data.prospects.map(p => `
+            <div class="bg-white p-3 rounded-xl border border-rose-200 shadow-sm space-y-2">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 class="font-bold text-xs text-slate-900">${p.gymName || 'Facility'}</h4>
+                  <p class="text-[11px] text-slate-500">${p.ownerName || 'Gym Owner'} • ${p.city || ''} ${p.country || ''}</p>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                  ${p.feedbackCategory || 'Interested'}
+                </span>
+              </div>
+              <div class="text-[11px] bg-slate-50 p-2 rounded border border-slate-200 text-slate-700 italic">
+                "${p.rawResponseText ? p.rawResponseText.slice(0, 110) + '...' : 'Strong purchase intent'}"
+              </div>
+              <div class="flex items-center justify-between text-[11px] pt-1">
+                <span class="text-slate-500 font-medium">${p.whatsappNumber || p.phone || p.businessEmail || 'Direct'}</span>
+                <button onclick="openScheduleFollowUpModal(${p.leadId}, null, '${(p.gymName || '').replace(/'/g, "\\'")}')" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded text-[10px] font-bold transition">
+                  <i class="fa-solid fa-calendar-plus mr-1"></i> Follow-Up
+                </button>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          container.classList.add('hidden');
+          list.innerHTML = '';
+        }
+      } catch (e) {
+        console.warn('Error loading high value prospects:', e);
+      }
+    }
+
+    async function loadFeedbacks() {
+      const category = document.getElementById('filter-fb-category').value;
+      const sentiment = document.getElementById('filter-fb-sentiment').value;
+      const search = document.getElementById('filter-fb-search').value;
+      const highValue = document.getElementById('filter-fb-highvalue').checked;
+
+      const params = new URLSearchParams();
+      if (category) params.append('category', category);
+      if (sentiment) params.append('sentiment', sentiment);
+      if (search) params.append('search', search);
+      if (highValue) params.append('highValue', 'true');
+
+      try {
+        const res = await fetch(`/api/feedback/items?${params.toString()}`);
+        const data = await res.json();
+        const tbody = document.getElementById('feedbacks-table-body');
+        document.getElementById('feedback-count-badge').textContent = `${data.count || 0} records`;
+
+        if (!data.success || !data.feedbacks || data.feedbacks.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-400">No customer feedback records found matching filters.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = data.feedbacks.map(f => {
+          let catBadgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
+          if (f.feedbackCategory === 'Interested in purchasing') catBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold';
+          else if (f.feedbackCategory === 'Pricing concern') catBadgeClass = 'bg-amber-100 text-amber-800 border-amber-300 font-bold';
+          else if (f.feedbackCategory === 'Positive feedback') catBadgeClass = 'bg-blue-100 text-blue-800 border-blue-300';
+          else if (f.feedbackCategory === 'Feature request') catBadgeClass = 'bg-indigo-100 text-indigo-800 border-indigo-300';
+          else if (f.feedbackCategory === 'Technical concern') catBadgeClass = 'bg-purple-100 text-purple-800 border-purple-300';
+          else if (f.feedbackCategory === 'Not interested') catBadgeClass = 'bg-rose-100 text-rose-800 border-rose-300';
+          else if (f.feedbackCategory === 'Needs more time') catBadgeClass = 'bg-yellow-100 text-yellow-800 border-yellow-300';
+
+          const stars = '★'.repeat(f.rating || 5) + '☆'.repeat(5 - (f.rating || 5));
+          const sentimentClass = f.sentiment === 'Positive' ? 'text-emerald-600' : (f.sentiment === 'Negative' ? 'text-rose-600' : 'text-slate-600');
+
+          return `
+            <tr class="hover:bg-slate-50/80 transition-colors">
+              <td class="px-4 py-3">
+                <div class="font-bold text-slate-900">${f.gymName || 'Fitness Centre'}</div>
+                <div class="text-[11px] text-slate-500">${f.ownerName || 'Contact'} ${f.leadId ? `• Lead #${f.leadId}` : ''}</div>
+              </td>
+              <td class="px-4 py-3">
+                <span class="inline-block px-2.5 py-1 rounded-full text-[10px] border ${catBadgeClass}">
+                  ${f.feedbackCategory}
+                </span>
+                ${f.highValueProspect ? '<span class="ml-1 text-[10px] text-rose-600 font-black">🔥 High-Value</span>' : ''}
+              </td>
+              <td class="px-4 py-3">
+                <div class="text-amber-500 font-bold text-xs tracking-widest">${stars}</div>
+                <div class="text-[10px] font-semibold ${sentimentClass}">${f.sentiment || 'Neutral'} (${f.rating || 5}/5)</div>
+              </td>
+              <td class="px-4 py-3 max-w-xs">
+                <div class="text-slate-700 italic text-[11px] bg-slate-50 p-1.5 rounded border border-slate-100 line-clamp-2">
+                  "${f.rawResponseText || 'No verbatim comment recorded'}"
+                </div>
+              </td>
+              <td class="px-4 py-3 max-w-xs text-[11px] text-slate-600 space-y-0.5">
+                ${f.likedFeatures ? `<div><strong class="text-emerald-700">Liked:</strong> ${f.likedFeatures}</div>` : ''}
+                ${f.improvements ? `<div><strong class="text-amber-700">Improve:</strong> ${f.improvements}</div>` : ''}
+                ${f.questions ? `<div><strong class="text-blue-700">Q:</strong> ${f.questions}</div>` : ''}
+              </td>
+              <td class="px-4 py-3 text-center">
+                <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${f.channel === 'whatsapp' ? 'bg-emerald-100 text-emerald-800' : 'bg-indigo-100 text-indigo-800'}">
+                  ${f.channel === 'whatsapp' ? '<i class="fa-brands fa-whatsapp mr-1"></i> WhatsApp' : '<i class="fa-solid fa-envelope mr-1"></i> Email'}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-right space-x-1">
+                ${f.leadId ? `
+                  <button onclick="openScheduleFollowUpModal(${f.leadId}, ${f.meetingId || 'null'}, '${(f.gymName || '').replace(/'/g, "\\'")}')" class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded text-[10px] font-bold transition">
+                    <i class="fa-solid fa-clock-rotate-left mr-1"></i> Follow-Up
+                  </button>
+                ` : ''}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (e) {
+        console.warn('Error loading feedbacks:', e);
+      }
+    }
+
+    async function loadFollowUps() {
+      const status = document.getElementById('filter-fu-status').value;
+      const params = new URLSearchParams();
+      if (status) params.append('status', status);
+
+      try {
+        const res = await fetch(`/api/feedback/followups?${params.toString()}`);
+        const data = await res.json();
+        const tbody = document.getElementById('followups-table-body');
+
+        if (!data.success || !data.followUps || data.followUps.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-400">No scheduled follow-ups found in this view.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = data.followUps.map(fu => {
+          let statusBadge = 'bg-blue-100 text-blue-800 border-blue-200';
+          if (fu.status === 'Sent') statusBadge = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+          else if (fu.status === 'Cancelled') statusBadge = 'bg-slate-100 text-slate-500 border-slate-200 line-through';
+          else if (fu.status === 'Failed') statusBadge = 'bg-rose-100 text-rose-800 border-rose-200';
+
+          return `
+            <tr class="hover:bg-slate-50/80 transition-colors">
+              <td class="px-4 py-3">
+                <div class="font-bold text-slate-900">${fu.gymName || 'Facility'}</div>
+                <div class="text-[11px] text-slate-500">Lead #${fu.leadId} ${fu.ownerName ? `• ${fu.ownerName}` : ''}</div>
+              </td>
+              <td class="px-4 py-3">
+                <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  ${fu.followUpType}
+                </span>
+              </td>
+              <td class="px-4 py-3">
+                <div class="font-bold text-slate-900">${fu.scheduledDate}</div>
+                <div class="text-[11px] text-slate-500">${fu.scheduledTime || '11:00 AM'}</div>
+              </td>
+              <td class="px-4 py-3 max-w-xs">
+                ${fu.promisedCallbackDate ? `
+                  <div class="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 p-1.5 rounded">
+                    <i class="fa-solid fa-comment-sms mr-1 text-amber-600"></i> Promised: ${fu.promisedCallbackDate}
+                    <div class="text-[10px] text-amber-700 font-normal mt-0.5">Text Check-In Only (NO voice call)</div>
+                  </div>
+                ` : `
+                  <div class="text-slate-600 text-[11px] truncate">${fu.customMessage || 'Standard post-demo follow-up'}</div>
+                `}
+              </td>
+              <td class="px-4 py-3 text-center text-slate-700 font-bold">
+                #${fu.attemptNumber || 1}
+              </td>
+              <td class="px-4 py-3 text-center">
+                <span class="text-[10px] font-semibold ${fu.channel === 'whatsapp' ? 'text-emerald-700' : 'text-indigo-700'}">
+                  ${fu.channel === 'whatsapp' ? '<i class="fa-brands fa-whatsapp mr-1"></i> WA' : '<i class="fa-solid fa-envelope mr-1"></i> Email'}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-center">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusBadge}">
+                  ${fu.status}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-right space-x-1">
+                ${fu.status === 'Pending' ? `
+                  <button onclick="cancelFollowUpItem(${fu.id})" class="text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded text-[10px] font-semibold transition">
+                    Cancel
+                  </button>
+                ` : ''}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (e) {
+        console.warn('Error loading follow ups:', e);
+      }
+    }
+
+    function openRequestFeedbackModal(leadId, meetingId) {
+      if (leadId) document.getElementById('rf-lead-id').value = leadId;
+      if (meetingId) document.getElementById('rf-meeting-id').value = meetingId;
+      document.getElementById('request-feedback-modal').classList.remove('hidden');
+    }
+
+    function closeRequestFeedbackModal() {
+      document.getElementById('request-feedback-modal').classList.add('hidden');
+    }
+
+    async function submitFeedbackRequest() {
+      const leadId = document.getElementById('rf-lead-id').value;
+      const meetingId = document.getElementById('rf-meeting-id').value;
+      const channel = document.getElementById('rf-channel').value;
+
+      if (!leadId) {
+        alert('Please specify Lead ID.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-submit-rf');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Sending...';
+
+      try {
+        const res = await fetch('/api/feedback/request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leadId, meetingId, channel })
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeRequestFeedbackModal();
+          alert(`6-Question feedback request dispatched via ${channel.toUpperCase()} to ${data.gymName || 'lead'}!`);
+          await loadFeedbackStats();
+          await loadFollowUps();
+        } else {
+          alert('Could not send feedback request: ' + data.error);
+        }
+      } catch (e) {
+        alert('Error: ' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1.5"></i> Dispatch Feedback Request';
+      }
+    }
+
+    function openLogFeedbackModal(leadId, meetingId, gymName) {
+      if (leadId) document.getElementById('lf-lead-id').value = leadId;
+      if (gymName) document.getElementById('lf-gym-name').value = gymName;
+      document.getElementById('log-feedback-modal').classList.remove('hidden');
+    }
+
+    function closeLogFeedbackModal() {
+      document.getElementById('log-feedback-modal').classList.add('hidden');
+    }
+
+    async function submitLogFeedback() {
+      const leadId = document.getElementById('lf-lead-id').value;
+      const gymName = document.getElementById('lf-gym-name').value;
+      const channel = document.getElementById('lf-channel').value;
+      const responseText = document.getElementById('lf-response-text').value;
+
+      if (!responseText) {
+        alert('Please enter prospect feedback response text.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-submit-lf');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Classifying...';
+
+      try {
+        const res = await fetch('/api/feedback/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leadId, gymName, channel, responseText })
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeLogFeedbackModal();
+          const c = data.classification;
+          alert(`Feedback Processed!\n\nCategory: ${c.category}\nSentiment: ${c.sentiment}\nRating: ${c.rating}/5\nHigh-Value: ${c.isHighValue ? 'YES (Admin Alerted)' : 'No'}\n${c.promisedCallbackDate ? 'Promised Callback Date: ' + c.promisedCallbackDate : ''}`);
+          await loadFeedbackStats();
+          await loadFeedbacks();
+          await loadFollowUps();
+          await loadHighValueProspects();
+        } else {
+          alert('Failed to log feedback: ' + data.error);
+        }
+      } catch (e) {
+        alert('Error: ' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> Process &amp; Classify';
+      }
+    }
+
+    function openScheduleFollowUpModal(leadId, meetingId, gymName) {
+      if (leadId) document.getElementById('sfu-lead-id').value = leadId;
+      // Default to 3 days out
+      const d = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      document.getElementById('sfu-date').value = d;
+      document.getElementById('schedule-followup-modal').classList.remove('hidden');
+    }
+
+    function closeScheduleFollowUpModal() {
+      document.getElementById('schedule-followup-modal').classList.add('hidden');
+    }
+
+    async function submitScheduleFollowUp() {
+      const leadId = document.getElementById('sfu-lead-id').value;
+      const followUpType = document.getElementById('sfu-type').value;
+      const channel = document.getElementById('sfu-channel').value;
+      const scheduledDate = document.getElementById('sfu-date').value;
+      const scheduledTime = document.getElementById('sfu-time').value;
+      const customMessage = document.getElementById('sfu-note').value;
+
+      if (!leadId || !scheduledDate) {
+        alert('Lead ID and Scheduled Date are required.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/feedback/followups', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            leadId,
+            followUpType,
+            channel,
+            scheduledDate,
+            scheduledTime,
+            customMessage,
+            promisedCallbackDate: followUpType === 'Promised Callback' ? scheduledDate : null
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeScheduleFollowUpModal();
+          alert(`Follow-Up scheduled for ${scheduledDate} (${channel.toUpperCase()})!\nRemember: promised callbacks operate strictly via text/email reminder, no voice calls.`);
+          await loadFeedbackStats();
+          await loadFollowUps();
+        } else {
+          alert('Follow-Up scheduling failed: ' + data.error);
+        }
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    async function cancelFollowUpItem(id) {
+      if (!confirm('Are you sure you want to cancel this scheduled follow-up?')) return;
+      try {
+        const res = await fetch(`/api/feedback/followups/${id}/cancel`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          await loadFeedbackStats();
+          await loadFollowUps();
+        } else {
+          alert('Failed to cancel follow-up: ' + data.error);
+        }
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    async function triggerDueFollowUpsNow() {
+      try {
+        const res = await fetch('/api/feedback/run-due', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          alert(`Due Follow-Ups Executed!\nSent: ${data.executed}\nSkipped (limits/opt-outs): ${data.skipped}\nErrors: ${data.errors}`);
+          await loadFeedbackStats();
+          await loadFollowUps();
+        } else {
+          alert('Execution error: ' + data.error);
         }
       } catch (e) {
         alert('Error: ' + e.message);

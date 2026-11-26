@@ -32,8 +32,34 @@ import db, {
   getMeetings,
   getUpcomingMeetings,
   getCalendarStats,
-  VALID_MEETING_STATUSES
+  VALID_MEETING_STATUSES,
+  recordFeedback,
+  getFeedbacks,
+  getFeedbackStats,
+  createFollowUp,
+  updateFollowUp,
+  getFollowUps,
+  getPendingFollowUps,
+  checkFollowUpEligibility,
+  getHighValueProspects,
+  FEEDBACK_CATEGORIES
 } from '../database/db.js';
+import {
+  generateFeedbackMessage,
+  classifyFeedbackResponse,
+  processInboundFeedback,
+  FEEDBACK_QUESTIONS
+} from '../feedback/feedbackService.js';
+import {
+  schedulePostDemoFollowUp,
+  schedulePromisedCallback,
+  scheduleMeetingReminder,
+  executeDueFollowUps,
+  identifyUnresponsiveLeads
+} from '../feedback/followUpScheduler.js';
+import {
+  notifyAdminHighValueLead
+} from '../feedback/adminNotifier.js';
 import {
   generateGoogleMeetLink,
   generateGoogleCalendarUrl,
@@ -976,7 +1002,26 @@ app.patch('/api/calendar/meetings/:id/status', (req, res) => {
       return res.status(400).json({ success: false, error: `Invalid status "${status}". Allowed: ${VALID_MEETING_STATUSES.join(', ')}` });
     }
 
-    const updated = updateMeeting(parseInt(req.params.id, 10), { status });
+    const meetingId = parseInt(req.params.id, 10);
+    const updated = updateMeeting(meetingId, { status });
+
+    // When a demo is marked Completed, automatically schedule a 24-hour polite feedback follow-up
+    if (status === 'Completed') {
+      const meeting = getMeetingById(meetingId);
+      if (meeting && meeting.leadId) {
+        try {
+          schedulePostDemoFollowUp({
+            leadId: meeting.leadId,
+            meetingId: meeting.id,
+            delayHours: 24,
+            channel: meeting.whatsappNumber ? 'whatsapp' : 'email'
+          });
+        } catch (fErr) {
+          console.warn('[Meeting Status] Could not auto-schedule follow-up:', fErr.message);
+        }
+      }
+    }
+
     res.json({ success: updated });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1047,6 +1092,238 @@ app.get('/api/calendar/meetings/:id/ics', (req, res) => {
     res.send(icsContent);
   } catch (err) {
     res.status(500).send(err.message);
+  }
+});
+
+// ==========================================
+// CUSTOMER FEEDBACK & FOLLOW-UP AGENT ENDPOINTS
+// ==========================================
+
+// 56. Feedback Metrics & Stats
+app.get('/api/feedback/stats', (req, res) => {
+  try {
+    const stats = getFeedbackStats();
+    res.json({
+      success: true,
+      stats,
+      feedbackCategories: FEEDBACK_CATEGORIES,
+      feedbackQuestions: FEEDBACK_QUESTIONS
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 57. List Feedback Entries with Filters
+app.get('/api/feedback/items', (req, res) => {
+  try {
+    const { category, sentiment, highValue, search, limit = 50, offset = 0 } = req.query;
+    const result = getFeedbacks({
+      category,
+      sentiment,
+      highValueOnly: highValue === 'true',
+      search
+    }, parseInt(limit, 10), parseInt(offset, 10));
+    res.json({ success: true, count: result.total, feedbacks: result.feedbacks });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 58. Dispatch Feedback Request to Lead
+app.post('/api/feedback/request', async (req, res) => {
+  try {
+    const { leadId, meetingId, channel = 'whatsapp' } = req.body;
+    if (!leadId) return res.status(400).json({ success: false, error: 'leadId is required' });
+
+    const lead = getLeadById(parseInt(leadId, 10));
+    if (!lead) return res.status(404).json({ success: false, error: 'Lead not found' });
+
+    // Enforce opt-out check & frequency limits
+    const eligibility = checkFollowUpEligibility(lead.id);
+    if (!eligibility.eligible) {
+      return res.status(400).json({ success: false, error: `Ineligible for feedback follow-up: ${eligibility.reason}` });
+    }
+
+    const meeting = meetingId ? getMeetingById(parseInt(meetingId, 10)) : null;
+    const msg = generateFeedbackMessage(lead, meeting, channel);
+
+    let sent = false;
+    if (channel === 'whatsapp' && (lead.whatsappNumber || lead.phone)) {
+      const { campaignManager } = await import('../outreach/campaignManager.js');
+      await campaignManager.sendWhatsAppMessage(lead.whatsappNumber || lead.phone, msg.text);
+      sent = true;
+    } else if (channel === 'email' && lead.businessEmail) {
+      const emailResult = await sendEmail({
+        to: lead.businessEmail,
+        from: 'sales@gymstack.in',
+        subject: msg.subject,
+        text: msg.text,
+        html: msg.html,
+        leadId: lead.id,
+        templateType: 'feedback_request'
+      });
+      sent = !!emailResult;
+    }
+
+    if (sent) {
+      // Create a tracking follow-up entry
+      createFollowUp({
+        leadId: lead.id,
+        meetingId: meeting ? meeting.id : null,
+        scheduledDate: new Date().toISOString().split('T')[0],
+        scheduledTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        channel,
+        followUpType: 'Demo Feedback',
+        customMessage: 'Post-demo 6-question feedback request delivered.',
+        status: 'Sent',
+        sentAt: new Date().toISOString()
+      });
+    }
+
+    res.json({ success: true, sent, channel, gymName: lead.gymName });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 59. Ingest / Log Prospect Feedback Response
+app.post('/api/feedback/log', async (req, res) => {
+  try {
+    const { leadId, meetingId, responseText, channel = 'whatsapp' } = req.body;
+    if (!responseText) return res.status(400).json({ success: false, error: 'responseText is required' });
+
+    let lead = null;
+    if (leadId) {
+      lead = getLeadById(parseInt(leadId, 10));
+    }
+
+    if (!lead) {
+      lead = {
+        id: null,
+        gymName: req.body.gymName || 'Fitness Facility',
+        ownerName: req.body.ownerName || 'Gym Owner',
+        whatsappNumber: req.body.whatsappNumber || null,
+        businessEmail: req.body.businessEmail || null
+      };
+    }
+
+    const result = await processInboundFeedback({
+      lead,
+      responseText,
+      channel,
+      meetingId: meetingId ? parseInt(meetingId, 10) : null
+    });
+
+    if (result.classification.isHighValue) {
+      notifyAdminHighValueLead(lead, result.feedback).catch(err => {
+        console.warn('Admin notification error:', err.message);
+      });
+    }
+
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 60. List Scheduled & Pending Follow-Ups
+app.get('/api/feedback/followups', (req, res) => {
+  try {
+    const { status, leadId, limit = 50, offset = 0 } = req.query;
+    const result = getFollowUps({
+      status,
+      leadId: leadId ? parseInt(leadId, 10) : undefined
+    }, parseInt(limit, 10), parseInt(offset, 10));
+    res.json({ success: true, count: result.total, followUps: result.followUps });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 61. Schedule Custom Follow-up / Promised Callback
+app.post('/api/feedback/followups', (req, res) => {
+  try {
+    const { leadId, meetingId, scheduledDate, scheduledTime, channel = 'whatsapp', followUpType, customMessage, promisedCallbackDate } = req.body;
+    if (!leadId || !scheduledDate) {
+      return res.status(400).json({ success: false, error: 'leadId and scheduledDate are required' });
+    }
+
+    const lead = getLeadById(parseInt(leadId, 10));
+    if (!lead) return res.status(404).json({ success: false, error: 'Lead not found' });
+
+    const eligibility = checkFollowUpEligibility(lead.id);
+    if (!eligibility.eligible) {
+      return res.status(400).json({ success: false, error: `Ineligible for follow-up: ${eligibility.reason}` });
+    }
+
+    let record;
+    if (followUpType === 'Promised Callback' || promisedCallbackDate) {
+      const cbResult = schedulePromisedCallback({
+        leadId: lead.id,
+        callbackDate: promisedCallbackDate || scheduledDate,
+        customNote: customMessage,
+        channel
+      });
+      record = cbResult.followUp;
+    } else {
+      record = createFollowUp({
+        leadId: lead.id,
+        meetingId: meetingId ? parseInt(meetingId, 10) : null,
+        scheduledDate,
+        scheduledTime: scheduledTime || '11:00 AM',
+        channel,
+        followUpType: followUpType || 'Demo Feedback',
+        customMessage: customMessage || 'Gentle check-in regarding Gym Stack.',
+        promisedCallbackDate
+      });
+    }
+
+    res.json({ success: true, followUp: record });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 62. Cancel Follow-Up
+app.post('/api/feedback/followups/:id/cancel', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const updated = updateFollowUp(id, { status: 'Cancelled' });
+    res.json({ success: updated });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 63. Execute Due Follow-Ups Immediately
+app.post('/api/feedback/run-due', async (req, res) => {
+  try {
+    const results = await executeDueFollowUps();
+    res.json({ success: true, ...results });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 64. High-Value Prospects List
+app.get('/api/feedback/high-value', (req, res) => {
+  try {
+    const prospects = getHighValueProspects();
+    res.json({ success: true, count: prospects.length, prospects });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 65. Identify Unresponsive Leads
+app.get('/api/feedback/unresponsive', (req, res) => {
+  try {
+    const days = parseInt(req.query.days || 3, 10);
+    const leads = identifyUnresponsiveLeads(days);
+    res.json({ success: true, count: leads.length, leads });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

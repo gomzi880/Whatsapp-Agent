@@ -198,6 +198,52 @@ Every incoming message from a prospect is analyzed in real time:
 | `GET /api/calendar/upcoming` | `GET` | Next upcoming 1-on-1 demo sessions with Google Meet links |
 | `GET /api/calendar/slots` | `GET` | Get conflict-free available slots for date and timezone |
 | `POST /api/calendar/meetings` | `POST` | Book demo meeting: generates Google Meet link, creates Google Calendar event URL, dispatches WhatsApp & Email (.ics) |
-| `PATCH /api/calendar/meetings/:id/status` | `PATCH` | Update meeting status (`Scheduled`, `Rescheduled`, `Completed`, `Cancelled`, `No Show`) |
+| `PATCH /api/calendar/meetings/:id/status` | `PATCH` | Update meeting status (`Scheduled`, `Rescheduled`, `Completed`, `Cancelled`, `No Show`) — auto-schedules 24h follow-up on Completed |
 | `POST /api/calendar/meetings/:id/reschedule` | `POST` | Reschedule demo session to new date/time with updated dual notifications |
 | `GET /api/calendar/meetings/:id/ics` | `GET` | Download standards-compliant iCalendar (.ics) invite file |
+
+---
+
+## 💬 Part 7: Customer Feedback & Follow-Up Agent (Step 7)
+
+An intelligent post-demonstration feedback collection, AI response categorization, and nurturing follow-up engine.
+
+### ❓ 1. Six Standard Post-Demo Questions
+Dispatched via WhatsApp or Email after any demonstration:
+1. **How was your Gym Stack demonstration?**
+2. **Which features did you like most?**
+3. **Which features would you like to improve?**
+4. **Do you have any questions?**
+5. **Are you interested in purchasing Gym Stack?**
+6. **Would you like to discuss pricing?**
+
+### 🏷️ 2. Seven Mandatory Feedback Categories
+Every prospect reply is classified by Gemini (with rule-based fallback) into exactly one category:
+- **`Positive feedback`**: Praises the system or walkthrough.
+- **`Feature request`**: Requests specific integrations, custom reports, or mobile app features.
+- **`Pricing concern`**: Inquires about custom quotes, discounts, or annual subscription tiers.
+- **`Technical concern`**: Questions offline operation, hardware, biometric devices, or data security.
+- **`Interested in purchasing`**: Ready to buy, requests contract/invoice, wants onboarding.
+- **`Needs more time`**: Needs to discuss with partner/trainer, busy now, or requested future contact.
+- **`Not interested`**: Explicitly declines; instantly updates lead status to `Unsubscribed` and permanently cancels all future outreach.
+
+### 🛡️ 3. Follow-Up Guardrails & Anti-Spam Protection
+- **Frequency Limits**: Maximum **3 follow-up attempts** within a 14-day window.
+- **Cooldown Interval**: Minimum **48-hour gap** between subsequent follow-up messages.
+- **Opt-Out Compliance**: Immediate and permanent cancellation of pending follow-ups upon opt-out.
+- **Promised Callback Tracker (NO Voice Calls)**: When prospects say *"ping me next Tuesday"*, the date is remembered and a courteous WhatsApp/Email check-in is scheduled for that date. **The agent never initiates voice calls.**
+- **High-Value Alerts**: Instant email and dashboard alerts to administrators (`sales@gymstack.in`) when high-value prospects (`Interested in purchasing` / `Pricing concern`) are identified.
+
+### Customer Feedback & Follow-Up Endpoints
+| Endpoint | Method | Description |
+|---|---|---|
+| `GET /api/feedback/stats` | `GET` | Feedback metrics: total responses, high-value buyers, positive, pricing concerns, feature requests, pending follow-ups |
+| `GET /api/feedback/items` | `GET` | Query customer feedback entries with filters for category (7 types), sentiment, and high-value |
+| `POST /api/feedback/request` | `POST` | Send 6-question feedback request to any lead via WhatsApp or Email |
+| `POST /api/feedback/log` | `POST` | Ingest prospect response, run AI classification, flag high-value leads, and schedule follow-ups |
+| `GET /api/feedback/followups` | `GET` | Query follow-up schedule and promised callback calendar |
+| `POST /api/feedback/followups` | `POST` | Schedule custom follow-up or promised callback date with frequency checks |
+| `POST /api/feedback/followups/:id/cancel` | `POST` | Cancel a scheduled follow-up item |
+| `POST /api/feedback/run-due` | `POST` | Execute due follow-ups immediately with guardrails |
+| `GET /api/feedback/high-value` | `GET` | List closing-ready high-value prospects for immediate sales action |
+| `GET /api/feedback/unresponsive` | `GET` | Surface unresponsive leads past threshold for gentle nurturing |

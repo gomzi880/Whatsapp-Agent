@@ -281,9 +281,29 @@ export async function processInboundEmail({
     };
   }
 
-  // Action 3: General Question, Product Inquiry, or Pricing
+  // Action 3: General Question, Product Inquiry, Pricing, or Feedback
   if (leadId) {
     updateLeadStatus(leadId, 'Responded');
+  }
+
+  // Check if inbound email is customer feedback
+  let feedbackResult = null;
+  const isFeedbackSubject = /feedback|demo|walkthrough|thoughts/i.test(subject);
+  if (lead && (isFeedbackSubject || lead.status === 'Demo Completed' || lead.status === 'Follow-up Required')) {
+    try {
+      const { processInboundFeedback } = await import('../feedback/feedbackService.js');
+      feedbackResult = await processInboundFeedback({
+        lead,
+        responseText: bodyText || bodyHtml,
+        channel: 'email'
+      });
+      if (feedbackResult?.classification?.isHighValue) {
+        const { notifyAdminHighValueLead } = await import('../feedback/adminNotifier.js');
+        notifyAdminHighValueLead(lead, feedbackResult.feedback).catch(console.warn);
+      }
+    } catch (fbErr) {
+      console.warn('[Email AI Handler] Feedback processing error:', fbErr.message);
+    }
   }
 
   // Generate grounded AI response

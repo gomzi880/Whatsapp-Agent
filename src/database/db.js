@@ -245,6 +245,56 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_meetings_leadId ON meetings(leadId);
   CREATE INDEX IF NOT EXISTS idx_meetings_date ON meetings(meetingDate);
   CREATE INDEX IF NOT EXISTS idx_meetings_status ON meetings(status);
+
+  CREATE TABLE IF NOT EXISTS feedbacks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    leadId INTEGER,
+    meetingId INTEGER,
+    gymName TEXT NOT NULL,
+    ownerName TEXT,
+    channel TEXT DEFAULT 'whatsapp',
+    rating INTEGER,
+    likedFeatures TEXT,
+    improvements TEXT,
+    questions TEXT,
+    purchaseInterest TEXT,
+    pricingDiscussionRequested INTEGER DEFAULT 0,
+    feedbackCategory TEXT NOT NULL,
+    sentiment TEXT DEFAULT 'Neutral',
+    rawResponseText TEXT,
+    highValueProspect INTEGER DEFAULT 0,
+    adminNotified INTEGER DEFAULT 0,
+    createdAt TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY(leadId) REFERENCES leads(id) ON DELETE SET NULL,
+    FOREIGN KEY(meetingId) REFERENCES meetings(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_feedbacks_leadId ON feedbacks(leadId);
+  CREATE INDEX IF NOT EXISTS idx_feedbacks_category ON feedbacks(feedbackCategory);
+
+  CREATE TABLE IF NOT EXISTS follow_ups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    leadId INTEGER,
+    meetingId INTEGER,
+    feedbackId INTEGER,
+    scheduledDate TEXT NOT NULL,
+    scheduledTime TEXT DEFAULT '11:00',
+    channel TEXT DEFAULT 'whatsapp',
+    followUpType TEXT DEFAULT 'post_demo_checkin',
+    customMessage TEXT,
+    promisedCallbackDate TEXT,
+    status TEXT DEFAULT 'Pending',
+    attemptNumber INTEGER DEFAULT 1,
+    sentAt TEXT,
+    createdAt TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY(leadId) REFERENCES leads(id) ON DELETE SET NULL,
+    FOREIGN KEY(meetingId) REFERENCES meetings(id) ON DELETE SET NULL,
+    FOREIGN KEY(feedbackId) REFERENCES feedbacks(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_follow_ups_leadId ON follow_ups(leadId);
+  CREATE INDEX IF NOT EXISTS idx_follow_ups_date ON follow_ups(scheduledDate);
+  CREATE INDEX IF NOT EXISTS idx_follow_ups_status ON follow_ups(status);
 `);
 
 /**
@@ -1415,6 +1465,345 @@ export function getCalendarStats() {
     todayMeetings
   };
 }
+
+/**
+ * ============================================================================
+ * CUSTOMER FEEDBACK & FOLLOW-UP AGENT DATABASE HELPERS
+ * ============================================================================
+ */
+
+export const FEEDBACK_CATEGORIES = [
+  'Positive feedback',
+  'Feature request',
+  'Pricing concern',
+  'Technical concern',
+  'Interested in purchasing',
+  'Needs more time',
+  'Not interested'
+];
+
+export function recordFeedback(data) {
+  const isHighValue = (
+    data.feedbackCategory === 'Interested in purchasing' ||
+    data.feedbackCategory === 'Pricing concern' ||
+    data.pricingDiscussionRequested === 1 ||
+    data.purchaseInterest === 'Yes'
+  ) ? 1 : 0;
+
+  const stmt = db.prepare(`
+    INSERT INTO feedbacks (
+      leadId, meetingId, gymName, ownerName, channel,
+      rating, likedFeatures, improvements, questions,
+      purchaseInterest, pricingDiscussionRequested,
+      feedbackCategory, sentiment, rawResponseText,
+      highValueProspect, adminNotified
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const info = stmt.run(
+    data.leadId || null,
+    data.meetingId || null,
+    data.gymName || 'Fitness Facility',
+    data.ownerName || 'Gym Owner',
+    data.channel || 'whatsapp',
+    data.rating || null,
+    data.likedFeatures || null,
+    data.improvements || null,
+    data.questions || null,
+    data.purchaseInterest || null,
+    data.pricingDiscussionRequested ? 1 : 0,
+    data.feedbackCategory || 'Positive feedback',
+    data.sentiment || 'Neutral',
+    data.rawResponseText || null,
+    isHighValue,
+    data.adminNotified ? 1 : 0
+  );
+
+  return { id: info.lastInsertRowid, ...data, highValueProspect: isHighValue };
+}
+
+export function getFeedbacks(filters = {}, limit = 50, offset = 0) {
+  const whereClauses = [];
+  const params = [];
+
+  if (filters.category && filters.category !== 'All') {
+    whereClauses.push('f.feedbackCategory = ?');
+    params.push(filters.category);
+  }
+
+  if (filters.sentiment && filters.sentiment !== 'All') {
+    whereClauses.push('f.sentiment = ?');
+    params.push(filters.sentiment);
+  }
+
+  if (filters.leadId) {
+    whereClauses.push('f.leadId = ?');
+    params.push(filters.leadId);
+  }
+
+  if (filters.highValueOnly === true || filters.highValueOnly === 'true') {
+    whereClauses.push('f.highValueProspect = 1');
+  }
+
+  if (filters.search) {
+    whereClauses.push('(f.gymName LIKE ? OR f.ownerName LIKE ? OR f.rawResponseText LIKE ?)');
+    const term = `%${filters.search}%`;
+    params.push(term, term, term);
+  }
+
+  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+  const feedbacks = db.prepare(`
+    SELECT f.*, l.city, l.country, l.businessEmail, l.whatsappNumber
+    FROM feedbacks f
+    LEFT JOIN leads l ON f.leadId = l.id
+    ${whereSql}
+    ORDER BY f.id DESC
+    LIMIT ? OFFSET ?
+  `).all(...params, limit, offset);
+
+  const total = db.prepare(`
+    SELECT COUNT(*) as count
+    FROM feedbacks f
+    ${whereSql}
+  `).get(...params).count;
+
+  return { feedbacks, total };
+}
+
+export function getFeedbackStats() {
+  const total = db.prepare('SELECT COUNT(*) as count FROM feedbacks').get().count;
+  const positive = db.prepare("SELECT COUNT(*) as count FROM feedbacks WHERE feedbackCategory = 'Positive feedback'").get().count;
+  const interestedPurchasing = db.prepare("SELECT COUNT(*) as count FROM feedbacks WHERE feedbackCategory = 'Interested in purchasing'").get().count;
+  const pricingConcerns = db.prepare("SELECT COUNT(*) as count FROM feedbacks WHERE feedbackCategory = 'Pricing concern'").get().count;
+  const featureRequests = db.prepare("SELECT COUNT(*) as count FROM feedbacks WHERE feedbackCategory = 'Feature request'").get().count;
+  const technicalConcerns = db.prepare("SELECT COUNT(*) as count FROM feedbacks WHERE feedbackCategory = 'Technical concern'").get().count;
+  const needsMoreTime = db.prepare("SELECT COUNT(*) as count FROM feedbacks WHERE feedbackCategory = 'Needs more time'").get().count;
+  const notInterested = db.prepare("SELECT COUNT(*) as count FROM feedbacks WHERE feedbackCategory = 'Not interested'").get().count;
+  const highValueTotal = db.prepare("SELECT COUNT(*) as count FROM feedbacks WHERE highValueProspect = 1").get().count;
+
+  const pendingFollowUps = db.prepare("SELECT COUNT(*) as count FROM follow_ups WHERE status = 'Pending'").get().count;
+
+  return {
+    total,
+    totalFeedback: total,
+    positive,
+    positiveFeedback: positive,
+    interestedPurchasing,
+    pricingConcerns,
+    featureRequests,
+    technicalConcerns,
+    needsMoreTime,
+    notInterested,
+    highValueTotal,
+    highValueCount: highValueTotal,
+    pendingFollowUps
+  };
+}
+
+export function createFollowUp(data) {
+  const stmt = db.prepare(`
+    INSERT INTO follow_ups (
+      leadId, meetingId, feedbackId, scheduledDate,
+      scheduledTime, channel, followUpType, customMessage,
+      promisedCallbackDate, status, attemptNumber
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const info = stmt.run(
+    data.leadId || null,
+    data.meetingId || null,
+    data.feedbackId || null,
+    data.scheduledDate,
+    data.scheduledTime || '11:00',
+    data.channel || 'whatsapp',
+    data.followUpType || 'post_demo_checkin',
+    data.customMessage || null,
+    data.promisedCallbackDate || null,
+    data.status || 'Pending',
+    data.attemptNumber || 1
+  );
+
+  return { id: info.lastInsertRowid, ...data };
+}
+
+export function updateFollowUp(id, data) {
+  const fields = [];
+  const params = [];
+
+  for (const [key, value] of Object.entries(data)) {
+    if (key === 'id') continue;
+    fields.push(`${key} = ?`);
+    params.push(value);
+  }
+
+  if (fields.length === 0) return false;
+
+  params.push(id);
+  const stmt = db.prepare(`UPDATE follow_ups SET ${fields.join(', ')} WHERE id = ?`);
+  const result = stmt.run(...params);
+  return result.changes > 0;
+}
+
+export function getFollowUps(filters = {}, limit = 50, offset = 0) {
+  const whereClauses = [];
+  const params = [];
+
+  if (filters.status && filters.status !== 'All') {
+    whereClauses.push('fu.status = ?');
+    params.push(filters.status);
+  }
+
+  if (filters.leadId) {
+    whereClauses.push('fu.leadId = ?');
+    params.push(filters.leadId);
+  }
+
+  if (filters.date) {
+    whereClauses.push('fu.scheduledDate = ?');
+    params.push(filters.date);
+  }
+
+  if (filters.search) {
+    whereClauses.push('(l.gymName LIKE ? OR l.ownerName LIKE ?)');
+    const term = `%${filters.search}%`;
+    params.push(term, term);
+  }
+
+  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+  const followUps = db.prepare(`
+    SELECT fu.*, l.gymName, l.ownerName, l.whatsappNumber, l.businessEmail, l.city
+    FROM follow_ups fu
+    LEFT JOIN leads l ON fu.leadId = l.id
+    ${whereSql}
+    ORDER BY fu.scheduledDate ASC, fu.scheduledTime ASC
+    LIMIT ? OFFSET ?
+  `).all(...params, limit, offset);
+
+  const total = db.prepare(`
+    SELECT COUNT(*) as count
+    FROM follow_ups fu
+    LEFT JOIN leads l ON fu.leadId = l.id
+    ${whereSql}
+  `).get(...params).count;
+
+  return { followUps, total };
+}
+
+export function getPendingFollowUps(targetDate = null) {
+  const dateStr = targetDate || new Date().toISOString().split('T')[0];
+
+  return db.prepare(`
+    SELECT fu.*, l.gymName, l.ownerName, l.whatsappNumber, l.businessEmail, l.status as leadStatus
+    FROM follow_ups fu
+    LEFT JOIN leads l ON fu.leadId = l.id
+    WHERE fu.status = 'Pending'
+      AND fu.scheduledDate <= ?
+    ORDER BY fu.scheduledDate ASC, fu.id ASC
+  `).all(dateStr);
+}
+
+/**
+ * Enforces frequency limits and opt-out checks:
+ * - Max 3 follow-up attempts per lead
+ * - Minimum 48 hours gap between follow-up messages
+ * - Never contact leads who are Unsubscribed or Not Interested
+ */
+export function checkFollowUpEligibility(leadId) {
+  if (!leadId) return { eligible: false, reason: 'missing_lead_id' };
+
+  const lead = db.prepare('SELECT * FROM leads WHERE id = ?').get(leadId);
+  if (!lead) return { eligible: false, reason: 'lead_not_found' };
+
+  if (lead.status === 'Unsubscribed' || lead.status === 'Not Interested') {
+    return { eligible: false, reason: 'opted_out' };
+  }
+
+  // Count follow-ups sent to this lead in last 14 days
+  const recentCount = db.prepare(`
+    SELECT COUNT(*) as count FROM follow_ups
+    WHERE leadId = ?
+      AND status = 'Sent'
+      AND sentAt >= datetime('now', '-14 days')
+  `).get(leadId).count;
+
+  if (recentCount >= 3) {
+    return { eligible: false, reason: 'max_attempts_reached (limit 3 per 14 days)' };
+  }
+
+  // Check last sent follow-up timestamp (minimum 48 hours gap)
+  const lastSent = db.prepare(`
+    SELECT sentAt FROM follow_ups
+    WHERE leadId = ?
+      AND status = 'Sent'
+      AND sentAt >= datetime('now', '-48 hours')
+    ORDER BY sentAt DESC LIMIT 1
+  `).get(leadId);
+
+  if (lastSent) {
+    return { eligible: false, reason: 'frequency_cooldown_active (must wait 48 hours between follow-ups)' };
+  }
+
+  return { eligible: true, lead };
+}
+
+export function getHighValueProspects(limit = 10) {
+  return db.prepare(`
+    SELECT f.*, l.city, l.country, l.businessEmail, l.whatsappNumber, l.leadScore
+    FROM feedbacks f
+    LEFT JOIN leads l ON f.leadId = l.id
+    WHERE f.highValueProspect = 1
+    ORDER BY f.id DESC
+    LIMIT ?
+  `).all(limit);
+}
+
+export function cancelPendingFollowUpsForLead(leadId) {
+  const result = db.prepare(`
+    UPDATE follow_ups
+    SET status = 'Cancelled'
+    WHERE leadId = ? AND status = 'Pending'
+  `).run(leadId);
+  return result.changes;
+}
+
+export function updateFeedback(id, fields = {}) {
+  const allowed = ['adminNotified', 'feedbackCategory', 'sentiment', 'rating', 'highValueProspect'];
+  const keys = Object.keys(fields).filter(k => allowed.includes(k));
+  if (keys.length === 0) return false;
+  const setClauses = keys.map(k => `${k} = ?`).join(', ');
+  const values = keys.map(k => fields[k]);
+  values.push(id);
+  const result = db.prepare(`UPDATE feedbacks SET ${setClauses} WHERE id = ?`).run(...values);
+  return result.changes > 0;
+}
+
+// Attach helper methods to default db object for convenience
+Object.assign(db, {
+  recordFeedback,
+  getFeedbacks,
+  getFeedbackStats,
+  updateFeedback,
+  createFollowUp,
+  updateFollowUp,
+  cancelPendingFollowUpsForLead,
+  getFollowUps,
+  getPendingFollowUps,
+  checkFollowUpEligibility,
+  getHighValueProspects,
+  FEEDBACK_CATEGORIES,
+  updateLeadStatus,
+  getLeadById,
+  queryLeads,
+  saveOrUpdateLead,
+  createMeeting,
+  updateMeeting,
+  getMeetingById,
+  getMeetings,
+  getUpcomingMeetings,
+  getCalendarStats
+});
 
 // Automatically seed on initialization if empty
 seedKnowledgeBaseIfEmpty();

@@ -181,6 +181,7 @@ export async function processProspectReply(remoteJid, messageText) {
   // Handle Automatic Meeting Scheduling Workflow if intent is demo_requested or lead has active meeting
   let schedulingReply = null;
   let meeting = null;
+  let feedbackResult = null;
 
   if (lead && (intent === 'demo_requested' || lead.status === 'Meeting Requested')) {
     try {
@@ -198,7 +199,27 @@ export async function processProspectReply(remoteJid, messageText) {
     }
   }
 
-  return { lead, intent, haltOutreach, schedulingReply, meeting };
+  // Handle Customer Feedback & Follow-Up ingestion
+  if (lead && (lead.status === 'Demo Completed' || lead.status === 'Meeting Scheduled' || lead.status === 'Follow-up Required' || intent === 'feedback_response')) {
+    try {
+      const { processInboundFeedback } = await import('../feedback/feedbackService.js');
+      feedbackResult = await processInboundFeedback({
+        lead,
+        responseText: messageText,
+        channel: 'whatsapp'
+      });
+      if (feedbackResult?.classification?.isHighValue) {
+        const { notifyAdminHighValueLead } = await import('../feedback/adminNotifier.js');
+        notifyAdminHighValueLead(lead, feedbackResult.feedback).catch(err => {
+          console.warn('Admin notification error:', err.message);
+        });
+      }
+    } catch (fbErr) {
+      console.warn('Feedback processing error in outreach:', fbErr.message);
+    }
+  }
+
+  return { lead, intent, haltOutreach, schedulingReply, meeting, feedbackResult };
 }
 
 /**
