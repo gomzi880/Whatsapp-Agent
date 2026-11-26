@@ -61,7 +61,7 @@ export function detectProspectIntent(text) {
   // 1. Opt-out / Stop / Not interested
   if (
     /^(stop|unsubscribe|cancel|nahi|band karo|don't message|dont message|no thanks|not interested|remove me|mat bhejo)$/i.test(clean) ||
-    /not interested|don't want|stop messaging|remove my number|never message/i.test(clean)
+    /\b(stop|unsubscribe|opt[- ]?out|not interested|don't want|dont want|stop messaging|remove my number|remove me|never message|do not message|dont message)\b/i.test(clean)
   ) {
     return 'opt_out';
   }

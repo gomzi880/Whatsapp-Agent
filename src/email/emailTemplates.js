@@ -73,7 +73,23 @@ function wrapHtml({ content, gymName, city, fromEmail, title }) {
 /**
  * Builds email subject, HTML, plain text, and attachment flag based on templateType
  */
-export function buildEmail({ templateType = 'introductory', lead = {}, customMessage, fromEmail = 'sales@gymstack.in' }) {
+export function buildEmail(arg1 = 'introductory', arg2 = {}, arg3 = null, arg4 = 'sales@gymstack.in') {
+  let templateType = 'introductory';
+  let lead = {};
+  let customMessage = null;
+  let fromEmail = 'sales@gymstack.in';
+
+  if (typeof arg1 === 'object' && arg1 !== null) {
+    templateType = arg1.templateType || 'introductory';
+    lead = arg1.lead || {};
+    customMessage = arg1.customMessage || null;
+    fromEmail = arg1.fromEmail || 'sales@gymstack.in';
+  } else {
+    templateType = arg1 === 'intro' ? 'introductory' : (arg1 || 'introductory');
+    lead = typeof arg2 === 'object' && arg2 !== null ? arg2 : {};
+    customMessage = arg3;
+    fromEmail = arg4 || 'sales@gymstack.in';
+  }
   const safeFrom = isAuthorizedSender(fromEmail) ? fromEmail : 'sales@gymstack.in';
   const gymName = lead.gymName || 'your gym';
   const ownerName = lead.ownerName || lead.founderName || 'Gym Owner';

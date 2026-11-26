@@ -370,10 +370,10 @@ export function normalizePhone(phone) {
 export function computeLeadScore(lead) {
   let score = 30; // base score for discovery
 
-  if (lead.businessPhone || lead.whatsappNumber) score += 20;
+  if (lead.businessPhone || lead.whatsappNumber || lead.normalizedPhone) score += 20;
   if (lead.hasWhatsApp) score += 15;
-  if (lead.businessEmail) score += 15;
-  if (lead.website) score += 10;
+  if (lead.businessEmail || lead.normalizedEmail) score += 15;
+  if (lead.website || lead.domain) score += 10;
   if (lead.ownerName || lead.founderName) score += 10;
   if (lead.instagramUrl || lead.facebookUrl || lead.linkedinUrl) score += 5;
   if (lead.branchesCount > 1) score += 5;

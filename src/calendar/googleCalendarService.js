@@ -191,7 +191,8 @@ export function getAvailableSlots(meetingDate, timeZone = 'Asia/Kolkata (IST)') 
   return {
     date: targetDate,
     timeZone,
-    slots: availableSlots
+    slots: availableSlots,
+    availableSlots
   };
 }
 

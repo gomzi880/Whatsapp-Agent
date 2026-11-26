@@ -105,11 +105,15 @@ export function retrieveRelevantKnowledge(userQuery, { category = null, topK = 5
     confidence = 'high';
   }
 
+  const contextFormatted = formatItemsForPrompt(topItems, settings, confidence);
+
   return {
     relevantItems: topItems,
+    items: topItems,
     confidence,
     highestScore,
-    formattedContext: formatItemsForPrompt(topItems, settings, confidence),
+    formattedContext: contextFormatted,
+    contextText: contextFormatted,
     demoLink
   };
 }
