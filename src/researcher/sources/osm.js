@@ -79,8 +79,7 @@ export async function searchGymsFromOSM({ country = 'India', state = '', city = 
     try {
       const searchTerms = [
         `gym in ${queryCity}, ${queryCountry}`,
-        `fitness centre in ${queryCity}, ${queryCountry}`,
-        `crossfit in ${queryCity}, ${queryCountry}`
+        `fitness centre in ${queryCity}, ${queryCountry}`
       ];
 
       for (const term of searchTerms) {
@@ -143,14 +142,14 @@ export async function searchGymsFromOSM({ country = 'India', state = '', city = 
     const postcode = tags['addr:postcode'] || '';
     const fullAddress = [housenumber, street, queryCity, state, postcode, queryCountry].filter(Boolean).join(', ');
 
-    // Deduce specific gym category
-    let detectedCategory = category;
+    // Deduce specific gym category (Only 'Gym' or 'Fitness Centre')
+    let detectedCategory = (category && ['Gym', 'Fitness Centre'].includes(category)) ? category : 'Gym';
     const lowerName = name.toLowerCase();
-    if (lowerName.includes('crossfit')) detectedCategory = 'CrossFit Studio';
-    else if (lowerName.includes('women') || lowerName.includes('female')) detectedCategory = 'Women Fitness Centre';
-    else if (lowerName.includes('personal') || lowerName.includes('pt studio')) detectedCategory = 'Personal Training Studio';
-    else if (lowerName.includes('gold') || lowerName.includes('anytime') || lowerName.includes('cult') || lowerName.includes('snap')) detectedCategory = 'Gym Chain';
-    else if (lowerName.includes('boutique') || lowerName.includes('pilates') || lowerName.includes('yoga')) detectedCategory = 'Boutique Fitness Studio';
+    if (lowerName.includes('fitness') || lowerName.includes('fit') || lowerName.includes('centre') || lowerName.includes('center')) {
+      detectedCategory = 'Fitness Centre';
+    } else {
+      detectedCategory = 'Gym';
+    }
 
     results.push({
       gymName: name.trim(),
@@ -170,7 +169,7 @@ export async function searchGymsFromOSM({ country = 'India', state = '', city = 
       facebookUrl: facebook ? (facebook.startsWith('http') ? facebook : `https://facebook.com/${facebook}`) : null,
       linkedinUrl: tags['contact:linkedin'] || null,
       gymCategory: detectedCategory,
-      branchesCount: detectedCategory === 'Gym Chain' ? 3 : 1,
+      branchesCount: 1,
       sourceUrl: `https://www.openstreetmap.org/?mlat=${elem.lat}&mlon=${elem.lon}`,
       sourceName: 'OpenStreetMap Global Directory',
       researchDate: new Date().toISOString().split('T')[0],

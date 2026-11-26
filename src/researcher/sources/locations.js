@@ -86,14 +86,6 @@ export const TARGET_LOCATIONS = {
 };
 
 export const GYM_CATEGORIES = [
-  'Fitness Centre',
-  'Commercial Gym',
-  'Independent Gym',
-  'Gym Chain',
-  'CrossFit Studio',
-  'Personal Training Studio',
-  'Premium Fitness Club',
-  'Boutique Fitness Studio',
-  'Women Fitness Centre',
-  'Strength & Conditioning'
+  'Gym',
+  'Fitness Centre'
 ];

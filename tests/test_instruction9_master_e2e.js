@@ -154,7 +154,7 @@ async function runMasterE2ETest() {
       state: 'Madhya Pradesh',
       country: 'India',
       address: '102 MG Road, Indore',
-      gymCategory: 'Commercial Gym',
+      gymCategory: 'Gym',
       status: 'Qualified'
     };
     const saved = saveOrUpdateLead(leadData);

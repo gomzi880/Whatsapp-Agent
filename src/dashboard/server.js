@@ -1582,15 +1582,8 @@ function renderDashboardHtml() {
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">Gym Category</label>
           <select id="research-category" class="w-full text-xs rounded-lg border-slate-300 border p-2 focus:ring-2 focus:ring-blue-500 outline-none">
-            <option value="Fitness Centre">All Fitness Centres</option>
-            <option value="Commercial Gym">Commercial Gyms</option>
-            <option value="Independent Gym">Independent Gyms</option>
-            <option value="Gym Chain">Gym Chains</option>
-            <option value="CrossFit Studio">CrossFit Studios</option>
-            <option value="Personal Training Studio">PT Studios</option>
-            <option value="Premium Fitness Club">Premium Clubs</option>
-            <option value="Boutique Fitness Studio">Boutique Studios</option>
-            <option value="Women Fitness Centre">Women Fitness Centres</option>
+            <option value="Gym" selected>Gym</option>
+            <option value="Fitness Centre">Fitness Centre</option>
           </select>
         </div>
 
@@ -1687,12 +1680,8 @@ function renderDashboardHtml() {
 
           <select id="filter-category" onchange="applyFilters()" class="border border-slate-300 rounded-lg p-1.5 outline-none">
             <option value="">All Categories</option>
+            <option value="Gym">Gym</option>
             <option value="Fitness Centre">Fitness Centre</option>
-            <option value="Commercial Gym">Commercial Gym</option>
-            <option value="Independent Gym">Independent Gym</option>
-            <option value="Gym Chain">Gym Chain</option>
-            <option value="CrossFit Studio">CrossFit</option>
-            <option value="Women Fitness Centre">Women Fitness</option>
           </select>
 
           <select id="filter-whatsapp" onchange="applyFilters()" class="border border-slate-300 rounded-lg p-1.5 outline-none">
