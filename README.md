@@ -173,3 +173,19 @@ Every incoming message from a prospect is analyzed in real time:
 | `POST /api/knowledge/upload` | `POST` | Upload PDF brochures and manuals |
 | `POST /api/knowledge/reindex` | `POST` | Re-index all uploaded documents |
 | `POST /api/knowledge/test-query` | `POST` | Test AI RAG retrieval simulation |
+
+### Email Sales Agent & Campaigns Endpoints
+| Endpoint | Method | Description |
+|---|---|---|
+| `GET /api/email/stats` | `GET` | Email metrics: total campaigns, sent, received, replied, failed, pending, opt-outs, reply rate |
+| `GET /api/email/campaigns` | `GET` | List all staged, active, and completed email campaigns |
+| `POST /api/email/campaigns` | `POST` | Create a staged email campaign (`pending_approval`) with authorized sender and template |
+| `POST /api/email/campaigns/:id/approve` | `POST` | Approve email campaign for dispatch |
+| `POST /api/email/campaigns/:id/start` | `POST` | Start background email delivery with pacing and anti-spam protection |
+| `POST /api/email/campaigns/:id/pause` | `POST` | Pause active email campaign |
+| `POST /api/email/campaigns/:id/cancel` | `POST` | Cancel email campaign |
+| `GET /api/email/logs` | `GET` | Live email activity log with filters (sent, received, replied, failed, pending, inbound/outbound) |
+| `GET /api/email/senders` | `GET` | List the 3 authorized senders (`sales@`, `info@`, `support@gymstack.in`) and verify SMTP handshake |
+| `POST /api/email/send` | `POST` | Send single direct or test email with template and optional brochure PDF |
+| `POST /api/email/inbound` | `POST` | Webhook / receiver endpoint for inbound email replies, intent classification, and AI response |
+| `GET /api/email/eligible-leads` | `GET` | Preview leads eligible for email outreach with verified email and deduplication |

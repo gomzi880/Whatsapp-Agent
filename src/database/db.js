@@ -161,6 +161,61 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_messages_leadId ON lead_messages(leadId);
   CREATE INDEX IF NOT EXISTS idx_messages_campaignId ON lead_messages(campaignId);
   CREATE INDEX IF NOT EXISTS idx_messages_role ON lead_messages(senderRole);
+
+  CREATE TABLE IF NOT EXISTS email_campaigns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    fromEmail TEXT DEFAULT 'sales@gymstack.in',
+    targetCountry TEXT,
+    targetCity TEXT,
+    targetCategory TEXT,
+    minLeadScore INTEGER DEFAULT 50,
+    dailyLimit INTEGER DEFAULT 20,
+    status TEXT DEFAULT 'pending_approval',
+    subject TEXT,
+    templateType TEXT DEFAULT 'introductory',
+    customMessage TEXT,
+    totalEligible INTEGER DEFAULT 0,
+    sentCount INTEGER DEFAULT 0,
+    deliveredCount INTEGER DEFAULT 0,
+    openedCount INTEGER DEFAULT 0,
+    repliedCount INTEGER DEFAULT 0,
+    interestedCount INTEGER DEFAULT 0,
+    optOutCount INTEGER DEFAULT 0,
+    failedCount INTEGER DEFAULT 0,
+    errorMessage TEXT,
+    startedAt TEXT,
+    completedAt TEXT,
+    createdAt TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS lead_emails (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    leadId INTEGER,
+    campaignId INTEGER,
+    fromEmail TEXT NOT NULL,
+    toEmail TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    bodyHtml TEXT NOT NULL,
+    bodyText TEXT,
+    direction TEXT NOT NULL,
+    status TEXT DEFAULT 'sent',
+    intent TEXT,
+    messageId TEXT,
+    inReplyTo TEXT,
+    referencesHeader TEXT,
+    hasAttachment INTEGER DEFAULT 0,
+    attachmentName TEXT,
+    errorMessage TEXT,
+    createdAt TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY(leadId) REFERENCES leads(id) ON DELETE SET NULL,
+    FOREIGN KEY(campaignId) REFERENCES email_campaigns(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_lead_emails_leadId ON lead_emails(leadId);
+  CREATE INDEX IF NOT EXISTS idx_lead_emails_toEmail ON lead_emails(toEmail);
+  CREATE INDEX IF NOT EXISTS idx_lead_emails_msgId ON lead_emails(messageId);
+  CREATE INDEX IF NOT EXISTS idx_email_campaigns_status ON email_campaigns(status);
 `);
 
 /**
@@ -456,6 +511,14 @@ export function getLeadStats() {
     statusBreakdown,
     countryBreakdown
   };
+}
+
+/**
+ * Retrieves a single lead by primary key ID
+ */
+export function getLeadById(id) {
+  if (!id) return null;
+  return db.prepare('SELECT * FROM leads WHERE id = ?').get(id) || null;
 }
 
 /**
@@ -902,6 +965,245 @@ export function getOutreachStats() {
     interestedCount,
     optOutCount,
     failedCount
+  };
+}
+
+/**
+ * ============================================================================
+ * EMAIL SALES AGENT DATABASE HELPERS
+ * ============================================================================
+ */
+
+export function createEmailCampaign(data) {
+  const stmt = db.prepare(`
+    INSERT INTO email_campaigns (
+      name, fromEmail, targetCountry, targetCity, targetCategory,
+      minLeadScore, dailyLimit, status, subject, templateType, customMessage
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const info = stmt.run(
+    data.name,
+    data.fromEmail || 'sales@gymstack.in',
+    data.targetCountry || null,
+    data.targetCity || null,
+    data.targetCategory || null,
+    data.minLeadScore !== undefined ? data.minLeadScore : 50,
+    data.dailyLimit !== undefined ? data.dailyLimit : 20,
+    data.status || 'pending_approval',
+    data.subject || null,
+    data.templateType || 'introductory',
+    data.customMessage || null
+  );
+
+  return { id: info.lastInsertRowid, ...data };
+}
+
+export function updateEmailCampaign(id, data) {
+  const fields = [];
+  const params = [];
+
+  for (const [key, value] of Object.entries(data)) {
+    fields.push(`${key} = ?`);
+    params.push(value);
+  }
+
+  if (fields.length === 0) return false;
+
+  params.push(id);
+  const stmt = db.prepare(`UPDATE email_campaigns SET ${fields.join(', ')} WHERE id = ?`);
+  const result = stmt.run(...params);
+  return result.changes > 0;
+}
+
+export function getEmailCampaignById(id) {
+  return db.prepare('SELECT * FROM email_campaigns WHERE id = ?').get(id);
+}
+
+export function getEmailCampaigns(limit = 50, offset = 0) {
+  return db.prepare(`
+    SELECT * FROM email_campaigns 
+    ORDER BY id DESC 
+    LIMIT ? OFFSET ?
+  `).all(limit, offset);
+}
+
+export function recordLeadEmail(data) {
+  const stmt = db.prepare(`
+    INSERT INTO lead_emails (
+      leadId, campaignId, fromEmail, toEmail, subject,
+      bodyHtml, bodyText, direction, status, intent,
+      messageId, inReplyTo, referencesHeader, hasAttachment,
+      attachmentName, errorMessage
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const info = stmt.run(
+    data.leadId || null,
+    data.campaignId || null,
+    data.fromEmail,
+    data.toEmail,
+    data.subject,
+    data.bodyHtml,
+    data.bodyText || null,
+    data.direction || 'outbound',
+    data.status || 'sent',
+    data.intent || null,
+    data.messageId || null,
+    data.inReplyTo || null,
+    data.referencesHeader || null,
+    data.hasAttachment ? 1 : 0,
+    data.attachmentName || null,
+    data.errorMessage || null
+  );
+
+  return { id: info.lastInsertRowid, ...data };
+}
+
+export function updateLeadEmail(id, data) {
+  const fields = [];
+  const params = [];
+
+  for (const [key, value] of Object.entries(data)) {
+    fields.push(`${key} = ?`);
+    params.push(value);
+  }
+
+  if (fields.length === 0) return false;
+
+  params.push(id);
+  const stmt = db.prepare(`UPDATE lead_emails SET ${fields.join(', ')} WHERE id = ?`);
+  const result = stmt.run(...params);
+  return result.changes > 0;
+}
+
+export function getLeadEmails(leadId, limit = 50) {
+  return db.prepare(`
+    SELECT * FROM lead_emails 
+    WHERE leadId = ? 
+    ORDER BY createdAt ASC 
+    LIMIT ?
+  `).all(leadId, limit);
+}
+
+export function getAllEmails(filters = {}, limit = 50, offset = 0) {
+  const whereClauses = [];
+  const params = [];
+
+  if (filters.status && filters.status !== 'All') {
+    whereClauses.push('status = ?');
+    params.push(filters.status);
+  }
+
+  if (filters.direction && filters.direction !== 'All') {
+    whereClauses.push('direction = ?');
+    params.push(filters.direction);
+  }
+
+  if (filters.leadId) {
+    whereClauses.push('leadId = ?');
+    params.push(filters.leadId);
+  }
+
+  if (filters.search) {
+    whereClauses.push('(toEmail LIKE ? OR fromEmail LIKE ? OR subject LIKE ?)');
+    const searchTerm = `%${filters.search}%`;
+    params.push(searchTerm, searchTerm, searchTerm);
+  }
+
+  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+  const emails = db.prepare(`
+    SELECT le.*, l.gymName, l.ownerName, l.city, l.country
+    FROM lead_emails le
+    LEFT JOIN leads l ON le.leadId = l.id
+    ${whereSql}
+    ORDER BY le.id DESC
+    LIMIT ? OFFSET ?
+  `).all(...params, limit, offset);
+
+  const total = db.prepare(`
+    SELECT COUNT(*) as count 
+    FROM lead_emails le
+    ${whereSql}
+  `).get(...params).count;
+
+  return { emails, total };
+}
+
+export function getEligibleLeadsForEmailOutreach({
+  country,
+  city,
+  category,
+  minScore = 50,
+  limit = 20
+}) {
+  const whereClauses = [
+    `status IN ('Qualified', 'Ready for Outreach', 'New')`,
+    `status NOT IN ('Unsubscribed', 'Not Qualified', 'Not Interested', 'Converted')`,
+    `businessEmail IS NOT NULL AND TRIM(businessEmail) != ''`,
+    `leadScore >= ?`
+  ];
+  const params = [minScore];
+
+  if (country && country !== 'All') {
+    whereClauses.push('country = ?');
+    params.push(country);
+  }
+  if (city && city !== 'All') {
+    whereClauses.push('city = ?');
+    params.push(city);
+  }
+  if (category && category !== 'All') {
+    whereClauses.push('gymCategory = ?');
+    params.push(category);
+  }
+
+  // Deduplication & Anti-Spam: Exclude leads emailed in the last 7 days
+  whereClauses.push(`
+    id NOT IN (
+      SELECT DISTINCT leadId FROM lead_emails 
+      WHERE direction = 'outbound' 
+        AND status IN ('sent', 'delivered', 'replied')
+        AND createdAt >= datetime('now', '-7 days')
+        AND leadId IS NOT NULL
+    )
+  `);
+
+  const rows = db.prepare(`
+    SELECT * FROM leads
+    WHERE ${whereClauses.join(' AND ')}
+    ORDER BY leadScore DESC, id DESC
+    LIMIT ?
+  `).all(...params, limit);
+
+  return rows;
+}
+
+export function getEmailStats() {
+  const totalCampaigns = db.prepare('SELECT COUNT(*) as count FROM email_campaigns').get().count;
+  const activeCampaigns = db.prepare("SELECT COUNT(*) as count FROM email_campaigns WHERE status = 'running'").get().count;
+  const totalSent = db.prepare("SELECT COUNT(*) as count FROM lead_emails WHERE direction = 'outbound' AND status IN ('sent', 'delivered')").get().count;
+  const totalReceived = db.prepare("SELECT COUNT(*) as count FROM lead_emails WHERE direction = 'inbound'").get().count;
+  const totalReplied = db.prepare("SELECT COUNT(*) as count FROM lead_emails WHERE status = 'replied'").get().count;
+  const totalFailed = db.prepare("SELECT COUNT(*) as count FROM lead_emails WHERE status = 'failed'").get().count;
+  const totalPending = db.prepare("SELECT COUNT(*) as count FROM lead_emails WHERE status = 'pending'").get().count;
+  const totalOptOuts = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status = 'Unsubscribed'").get().count;
+  const interestedLeads = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status IN ('Interested', 'Meeting Requested', 'Meeting Scheduled')").get().count;
+
+  const replyRate = totalSent > 0 ? Math.round((totalReceived / totalSent) * 100) : 0;
+
+  return {
+    totalCampaigns,
+    activeCampaigns,
+    totalSent,
+    totalReceived,
+    totalReplied,
+    totalFailed,
+    totalPending,
+    totalOptOuts,
+    interestedLeads,
+    replyRate
   };
 }
 

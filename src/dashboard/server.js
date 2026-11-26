@@ -20,8 +20,32 @@ import db, {
   getOutreachCampaignById,
   getOutreachStats,
   getLeadMessages,
-  getEligibleLeadsForOutreach
+  getEligibleLeadsForOutreach,
+  getEmailCampaigns,
+  getEmailCampaignById,
+  getAllEmails,
+  getEmailStats,
+  getEligibleLeadsForEmailOutreach
 } from '../database/db.js';
+import {
+  sendEmail,
+  verifySmtpConnection,
+  sendBrochureEmail
+} from '../email/emailService.js';
+import {
+  createEmailOutreachCampaign,
+  approveEmailCampaign,
+  startEmailCampaign,
+  pauseEmailCampaign,
+  cancelEmailCampaign
+} from '../email/emailCampaignManager.js';
+import {
+  processInboundEmail
+} from '../email/emailAiHandler.js';
+import {
+  AUTHORIZED_SENDERS,
+  buildEmail
+} from '../email/emailTemplates.js';
 import { TARGET_LOCATIONS, GYM_CATEGORIES } from '../researcher/sources/locations.js';
 import {
   startResearchJob,
@@ -617,6 +641,205 @@ app.post('/api/outreach/preview-template', (req, res) => {
 // 35. WhatsApp Connection Check
 app.get('/api/outreach/connection', (req, res) => {
   res.json({ success: true, isConnected: isWhatsAppConnected() });
+});
+
+// ==========================================
+// EMAIL SALES AGENT & CAMPAIGNS ENDPOINTS
+// ==========================================
+
+// 36. Email Stats
+app.get('/api/email/stats', (req, res) => {
+  try {
+    const stats = getEmailStats();
+    res.json({ success: true, stats, authorizedSenders: AUTHORIZED_SENDERS });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 37. List Email Campaigns
+app.get('/api/email/campaigns', (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit || 50, 10);
+    const offset = parseInt(req.query.offset || 0, 10);
+    const campaigns = getEmailCampaigns(limit, offset);
+    res.json({ success: true, campaigns });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 38. Create Email Campaign (staged in pending_approval)
+app.post('/api/email/campaigns', (req, res) => {
+  try {
+    const campaign = createEmailOutreachCampaign(req.body);
+    res.json({ success: true, campaign });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 39. Approve Email Campaign
+app.post('/api/email/campaigns/:id/approve', (req, res) => {
+  try {
+    const result = approveEmailCampaign(parseInt(req.params.id, 10));
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 40. Start Email Campaign
+app.post('/api/email/campaigns/:id/start', async (req, res) => {
+  try {
+    const result = await startEmailCampaign(parseInt(req.params.id, 10));
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 41. Pause Email Campaign
+app.post('/api/email/campaigns/:id/pause', (req, res) => {
+  try {
+    const result = pauseEmailCampaign(parseInt(req.params.id, 10));
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 42. Cancel Email Campaign
+app.post('/api/email/campaigns/:id/cancel', (req, res) => {
+  try {
+    const result = cancelEmailCampaign(parseInt(req.params.id, 10));
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 43. View Live Email Activity Logs (Sent, Received, Failed, Pending, Replied)
+app.get('/api/email/logs', (req, res) => {
+  try {
+    const { status, direction, leadId, search, limit = 50, offset = 0 } = req.query;
+    const result = getAllEmails(
+      {
+        status,
+        direction,
+        leadId: leadId ? parseInt(leadId, 10) : null,
+        search
+      },
+      parseInt(limit, 10),
+      parseInt(offset, 10)
+    );
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 44. Get Authorized Senders and Verify SMTP
+app.get('/api/email/senders', async (req, res) => {
+  try {
+    const sendersStatus = [];
+    for (const email of AUTHORIZED_SENDERS) {
+      sendersStatus.push({
+        email,
+        authorized: true
+      });
+    }
+    const smtpCheck = await verifySmtpConnection('sales@gymstack.in');
+    res.json({ success: true, senders: sendersStatus, smtpVerified: smtpCheck.ok, error: smtpCheck.error });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 45. Send Single or Test Email
+app.post('/api/email/send', async (req, res) => {
+  try {
+    const { to, from = 'sales@gymstack.in', templateType = 'introductory', leadId, customMessage } = req.body;
+    if (!to) return res.status(400).json({ success: false, error: 'Recipient "to" email is required' });
+
+    let leadData = leadId ? db.prepare('SELECT * FROM leads WHERE id = ?').get(leadId) : null;
+    if (!leadData) {
+      leadData = {
+        gymName: req.body.gymName || 'Fitness Studio',
+        ownerName: req.body.ownerName || 'Gym Owner',
+        city: req.body.city || 'Indore'
+      };
+    }
+
+    const emailContent = buildEmail({
+      templateType,
+      lead: leadData,
+      customMessage,
+      fromEmail: from
+    });
+
+    let attachments = [];
+    if (emailContent.attachBrochure) {
+      const { getBrochureAttachment } = await import('../email/brochureService.js');
+      const b = await getBrochureAttachment();
+      attachments.push(b);
+    }
+
+    const result = await sendEmail({
+      to,
+      from,
+      subject: req.body.subject || emailContent.subject,
+      html: emailContent.html,
+      text: emailContent.text,
+      attachments,
+      leadId: leadData.id || null,
+      templateType
+    });
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 46. Inbound Email Webhook / Processing Endpoint
+app.post('/api/email/inbound', async (req, res) => {
+  try {
+    const { fromEmail, toEmail, subject, bodyText, bodyHtml, messageId, inReplyTo, references } = req.body;
+    if (!fromEmail) return res.status(400).json({ success: false, error: 'fromEmail is required' });
+
+    const result = await processInboundEmail({
+      fromEmail,
+      toEmail: toEmail || 'sales@gymstack.in',
+      subject: subject || 'Inquiry',
+      bodyText: bodyText || '',
+      bodyHtml: bodyHtml || '',
+      messageId: messageId || `inbound-${Date.now()}@gymstack.in`,
+      inReplyTo,
+      references
+    });
+
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 47. Preview Eligible Leads for Email Outreach
+app.get('/api/email/eligible-leads', (req, res) => {
+  try {
+    const { country, city, category, minScore = 50, limit = 50 } = req.query;
+    const leads = getEligibleLeadsForEmailOutreach({
+      country,
+      city,
+      category,
+      minScore: parseInt(minScore, 10),
+      limit: parseInt(limit, 10)
+    });
+    res.json({ success: true, count: leads.length, leads });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 /**
