@@ -15,7 +15,12 @@ import db, {
   getKnowledgeSettings,
   updateKnowledgeSetting,
   getKnowledgeDocuments,
-  getKnowledgeStats
+  getKnowledgeStats,
+  getOutreachCampaigns,
+  getOutreachCampaignById,
+  getOutreachStats,
+  getLeadMessages,
+  getEligibleLeadsForOutreach
 } from '../database/db.js';
 import { TARGET_LOCATIONS, GYM_CATEGORIES } from '../researcher/sources/locations.js';
 import {
@@ -34,6 +39,17 @@ import {
   processUploadedDocument,
   reindexAllDocuments
 } from '../knowledge/knowledgeService.js';
+import {
+  createCampaign,
+  approveCampaign,
+  startCampaign,
+  pauseCampaign,
+  resumeCampaign,
+  stopCampaign,
+  sendTestOutreachMessage,
+  generatePersonalizedIntro
+} from '../outreach/campaignManager.js';
+import { isWhatsAppConnected } from '../outreach/outreachService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -437,6 +453,170 @@ app.post('/api/knowledge/test-query', (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
+});
+
+// ==========================================
+// OUTREACH CAMPAIGNS & LIVE MESSAGES ENDPOINTS
+// ==========================================
+
+// 23. Outreach Metrics & Stats
+app.get('/api/outreach/stats', (req, res) => {
+  try {
+    const stats = getOutreachStats();
+    res.json({ success: true, stats, isWhatsAppConnected: isWhatsAppConnected() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 24. List All Campaigns
+app.get('/api/outreach/campaigns', (req, res) => {
+  try {
+    const campaigns = getOutreachCampaigns(parseInt(req.query.limit || 50, 10));
+    res.json({ success: true, campaigns });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 25. Create Campaign (Staged in pending_approval)
+app.post('/api/outreach/campaigns', (req, res) => {
+  try {
+    const { name, targetCountry, targetCity, targetCategory, minLeadScore, dailyLimit, customIntroTemplate } = req.body;
+    const campaign = createCampaign({
+      name,
+      targetCountry,
+      targetCity,
+      targetCategory,
+      minLeadScore: parseInt(minLeadScore || 40, 10),
+      dailyLimit: parseInt(dailyLimit || 20, 10),
+      customIntroTemplate
+    });
+    res.json({ success: true, campaign });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 26. Approve Campaign
+app.post('/api/outreach/campaigns/:id/approve', (req, res) => {
+  try {
+    const campaign = approveCampaign(req.params.id);
+    res.json({ success: true, campaign });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 27. Start Campaign
+app.post('/api/outreach/campaigns/:id/start', async (req, res) => {
+  try {
+    const result = await startCampaign(req.params.id);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// 28. Pause Campaign
+app.post('/api/outreach/campaigns/:id/pause', (req, res) => {
+  try {
+    const ok = pauseCampaign(req.params.id);
+    res.json({ success: ok });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 29. Resume Campaign
+app.post('/api/outreach/campaigns/:id/resume', async (req, res) => {
+  try {
+    const result = await resumeCampaign(req.params.id);
+    res.json({ success: true, result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 30. Stop Campaign
+app.post('/api/outreach/campaigns/:id/stop', (req, res) => {
+  try {
+    const ok = stopCampaign(req.params.id);
+    res.json({ success: ok });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 31. Send Test Outreach Message
+app.post('/api/outreach/test', async (req, res) => {
+  try {
+    const { testPhone, leadData } = req.body;
+    if (!testPhone) return res.status(400).json({ success: false, error: 'testPhone is required' });
+    const result = await sendTestOutreachMessage(testPhone, leadData || {});
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 32. View Live Message Logs (Sent, Replies, Opt-outs)
+app.get('/api/outreach/messages', (req, res) => {
+  try {
+    const { leadId, campaignId, remoteJid, role, intent, limit = 50, offset = 0 } = req.query;
+    const result = getLeadMessages({
+      leadId: leadId ? parseInt(leadId, 10) : null,
+      campaignId: campaignId ? parseInt(campaignId, 10) : null,
+      remoteJid,
+      role,
+      intent,
+      limit: parseInt(limit, 10),
+      offset: parseInt(offset, 10)
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 33. Preview Eligible Leads
+app.get('/api/outreach/eligible-leads', (req, res) => {
+  try {
+    const { country, city, category, minScore = 30, limit = 50 } = req.query;
+    const leads = getEligibleLeadsForOutreach({
+      country,
+      city,
+      category,
+      minScore: parseInt(minScore, 10),
+      limit: parseInt(limit, 10)
+    });
+    res.json({ success: true, count: leads.length, leads });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 34. Preview Personalized Template
+app.post('/api/outreach/preview-template', (req, res) => {
+  try {
+    const { template, lead } = req.body;
+    const sampleLead = lead || {
+      gymName: 'Titan Fitness Club',
+      city: 'Indore',
+      country: 'India',
+      ownerName: 'Rahul',
+      gymCategory: 'Gym'
+    };
+    const rendered = generatePersonalizedIntro(sampleLead, template);
+    res.json({ success: true, rendered });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 35. WhatsApp Connection Check
+app.get('/api/outreach/connection', (req, res) => {
+  res.json({ success: true, isConnected: isWhatsAppConnected() });
 });
 
 /**

@@ -14,6 +14,9 @@ import {
   markFollowUpSent,
   getFollowUpText,
 } from './followup.js';
+import { registerWhatsAppSocket } from './src/outreach/outreachService.js';
+import { processProspectReply } from './src/outreach/campaignManager.js';
+import { recordLeadMessage } from './src/database/db.js';
 
 let stateBotEnabled = config.autoReplyEnabled;
 
@@ -158,6 +161,7 @@ async function startWhatsAppBot() {
       }
     } else if (connection === 'open') {
       console.log('✅ Connected successfully to WhatsApp!');
+      registerWhatsAppSocket(sock);
       console.log(`Auto-reply is currently: ${stateBotEnabled ? '🟢 ON' : '🔴 OFF'}`);
       console.log(`Ignoring group chats: ${config.ignoreGroups ? 'YES' : 'NO'}`);
       console.log(`Human Takeover active on: ${takeoverChats.size} chats`);
@@ -295,6 +299,20 @@ async function startWhatsAppBot() {
 
       console.log(`\n📩 Incoming from ${remoteJid}: "${text}"`);
 
+      // Conversation Intelligence & Lead Status Synchronization
+      let activeLead = null;
+      try {
+        const result = await processProspectReply(remoteJid, text);
+        activeLead = result.lead;
+        if (result.haltOutreach) {
+          console.log(`🛑 Outreach halted for ${remoteJid} (Opt-out acknowledged).`);
+          await sock.sendPresenceUpdate('paused', remoteJid);
+          continue;
+        }
+      } catch (err) {
+        console.warn('Error in conversation intelligence processing:', err.message);
+      }
+
       try {
         // 1. Mark message as read (Blue tick)
         await sock.readMessages([msg.key]);
@@ -320,6 +338,17 @@ async function startWhatsAppBot() {
         // 5. Send reply text
         await sock.sendMessage(remoteJid, { text: replyText });
         console.log(`💬 Replied to ${remoteJid}: "${replyText}"`);
+
+        // Record agent reply in database
+        recordLeadMessage({
+          leadId: activeLead ? activeLead.id : null,
+          campaignId: null,
+          remoteJid,
+          senderRole: 'agent',
+          messageText: replyText,
+          status: 'sent',
+          intent: 'conversational_reply'
+        });
 
         // 6. Send Brochure Image and/or PDF if requested
         if (sendBrochure) {

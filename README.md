@@ -1,6 +1,6 @@
-# 🏋️ GymStack AI: Global Research, Leads Database & Product Knowledge Agent
+# 🏋️ GymStack AI: Global Research, Leads, Product Knowledge & WhatsApp Outreach Agent
 
-A unified enterprise AI platform combining **Global Gym Research & Lead Generation**, a **Dynamic Product Knowledge & RAG Brain**, and a **Conversational WhatsApp Sales Automation Agent**.
+A unified enterprise AI platform combining **Global Gym Research & Lead Discovery**, an **Administrator-Controlled Dynamic RAG Knowledge Brain**, and an **Autonomous WhatsApp Sales & Outreach Agent**.
 
 ---
 
@@ -24,13 +24,13 @@ A unified enterprise AI platform combining **Global Gym Research & Lead Generati
 │ (Deduplication)   │                  │ Uploaded Manuals  │                  │ Sales Follow-ups  │
 └─────────┬─────────┘                  └─────────┬─────────┘                  └─────────┬─────────┘
           │                                      │                                      │
-          └──────────────────────────────────────┼──────────────────────────────────────┘
+          └──────────────────────────────────────┴──────────────────────────────────────┘
                                                  │
                                                  ▼
                                    ┌───────────────────────────┐
                                    │ 🌐 Unified Web Dashboard  │
                                    │  (http://localhost:3000)  │
-                                   │ Leads, Knowledge & Safety │
+                                   │ Leads, Knowledge, Outreach│
                                    └───────────────────────────┘
 ```
 
@@ -47,106 +47,129 @@ npm install
 | Command | Action |
 |---|---|
 | `npm run all` | Starts **both** the WhatsApp AI Sales Agent and the Web Dashboard concurrently |
-| `npm run dashboard` | Starts only the **Web Dashboard** on [http://localhost:3000](http://localhost:3000) (Leads & Knowledge) |
+| `npm run dashboard` | Starts only the **Web Dashboard** on [http://localhost:3000](http://localhost:3000) |
 | `npm start` | Starts only the **WhatsApp AI Agent** |
 
 ---
 
-## 🧠 Part 1: Product Knowledge Agent & AI Brain (Step 3)
+## 📱 Part 1: Connected WhatsApp AI Outreach & Conversation Intelligence (Step 4)
 
-The Product Knowledge Agent provides an administrator-controlled brain for the AI. It guarantees the agent only makes accurate, verified claims and escalates unknown questions to an administrator rather than inventing answers.
+The system extends your existing working WhatsApp connection (`@whiskeysockets/baileys`) so it can autonomously communicate with qualified gym business prospects. **No separate chatbot is created.**
 
-### 📚 14 Mandatory Product Knowledge Categories
-Every GymStack feature is systematically organized across 14 verified categories:
-1. **Product Overview**: Cloud-based gym & health club ERP platform for gyms, studios, CrossFit boxes, and chains.
-2. **Gym Management Features**: Front-desk operations, role-based staff access (with number masking), inventory & supplement POS, locker management.
-3. **Member Management**: Digital paperless registration, KYC documentation, renewal tracking, membership freeze & transfer rules.
-4. **Membership Plans**: Monthly, quarterly, annual, and custom packages; multi-service bundle add-ons (Steam, Sauna, Zumba, PT).
-5. **Attendance Management**: Biometric fingerprint devices, RFID, AI facial recognition scanners, dynamic QR code mobile check-in, automated door/turnstile gate locking for unpaid members.
-6. **Payment Management**: Automated WhatsApp payment reminders (before & on due date), online payment links (UPI, Google Pay, PhonePe, Cards), instant PDF invoices/receipts, partial/installment payments.
-7. **Trainer Management**: Personal training (PT) package session countdowns, automated trainer commission calculations, staff payroll.
-8. **Workout Management**: 500+ exercise library with muscle targeting, custom workout routine builder, personalized diet and nutrition charts.
-9. **Reports & Analytics**: Real-time collections and MRR, churn rate and retention analytics, profit/loss tracking, attendance heatmaps.
-10. **Branch Management**: Centralized master dashboard for 2 to 50+ gym branches, cross-branch attendance, multi-gym financial reporting.
-11. **Subscription Pricing**:
-    - **Starter Plan**: ₹499 / month (or ₹9,999 / year) for up to 150 members.
-    - **Gold Plan**: ₹2,700 / month for up to 500 members (Includes biometric hardware sync, branded mobile app, diet/workout builder).
-    - **Diamond Plan**: Custom Quote / ₹5,499 / year for unlimited members and multi-branch chains.
-12. **Product Benefits**: 20-30% revenue recovery in Month 1, saves 3-4 hours of daily manual paperwork, eliminates proxy attendance.
-13. **Frequently Asked Questions**: Free 24-hour data migration from Excel/old software, 30-day risk-free trial, demo scheduling, data privacy.
-14. **Technical Requirements**: 100% cloud-hosted (runs on Windows, Mac, iPad, Android), lightweight Windows background biometric sync utility.
+### 🎯 1. Lead Selection & Exclusion Engine
+- **Selection Criteria**:
+  - `Qualified` or `Ready for Outreach` status.
+  - Verified business WhatsApp number available (`hasWhatsApp = 1` and `normalizedPhone`).
+  - Minimum lead score threshold (e.g. 40+).
+  - Target country, state, city, and business category filters.
+  - Outreach eligibility confirmed by administrator (`isOutreachApproved()`).
+- **Exclusion Filters (Strict)**:
+  - Excludes duplicates (normalized phone, domain, business name).
+  - Excludes unsubscribed / opted-out contacts (`Unsubscribed`, `Not Interested`).
+  - Excludes leads contacted within the last 7 days.
+  - Excludes contacts with active human takeover.
 
-### 🛡️ Truth & Anti-Hallucination Protocol
-- **Keyword RAG Retrieval**: Tokenizes user questions and matches them against titles, tags, and verified contents with match scoring.
-- **Confidence Scoring**: High, Medium, Low, or Unsupported.
-- **Unsupported Feature Escalation**: When a prospect asks about an unsupported or unknown capability (e.g. pool temperature automation, medical equipment):
-  - The AI explicitly declines to invent capabilities.
-  - Politely states: *"I want to make sure I give you 100% accurate information on this — let me check with our product specialist and get back to you right away!"*
-  - Recommends the official self-registration/demo link: `https://gymstack.in/register`.
+### ✍️ 2. Individualized Personalized Outreach
+Generates a warm, professional, non-aggressive introduction for every gym:
+```text
+Hello {ownerName}! I came across {gymName} in {city} and wanted to introduce GymStack.
 
-### 🛑 Outreach Safety Guardrail
-- Automated marketing outreach is kept on hold until the administrator reviews and approves the product information.
-- A prominent toggle banner in the dashboard allows the administrator to authorize or pause outreach at any time.
+GymStack is an all-in-one gym management platform that helps fitness businesses automate member attendance (biometrics & face scanners), collect fees on WhatsApp, manage trainers, and simplify daily operations.
 
----
+We would love to show you how GymStack can simplify day-to-day management for {gymName}.
 
-## 🔍 Part 2: Global Gym Research Agent (Step 2)
+Would you be open to seeing a quick 5-minute product walkthrough or testing our 30-day free trial?
 
-- **Target Locations**:
-  - **India**: All 28 states & union territories (Madhya Pradesh, Maharashtra, Delhi, Uttar Pradesh, Gujarat, Rajasthan, Karnataka, Tamil Nadu, Telangana, West Bengal, Punjab, etc.).
-  - **International**: USA, UK, Canada, Australia, UAE, Singapore, Germany, France, Netherlands, and European markets.
-- **Gym Categories**: Independent Gyms, Fitness Centres, Gym Chains, CrossFit Studios, PT Studios, Premium Fitness Clubs, Boutique Studios, Women's Fitness Centres.
-- **Data Providers**: OpenStreetMap Overpass API + Google Places API fallback.
-- **Web Contact Enrichment**: Scrapes official websites for owner/founder names, emails, phones, and social media handles.
-- **Deduplication Engine**: Multi-key matching prevents duplicate leads based on normalized name + city, domain, phone, or email.
-- **15 Standard Lead Statuses**: `New`, `Researching`, `Qualified`, `Not Qualified`, `Ready for Outreach`, `Contacted`, `Responded`, `Interested`, `Meeting Requested`, `Meeting Scheduled`, `Demo Completed`, `Follow-up Required`, `Converted`, `Not Interested`, `Unsubscribed`.
-- **Intelligent Lead Scoring (0-100)**: Automatically scores lead quality based on verified contact channels.
+(Reply 'stop' anytime if you prefer not to receive updates)
+```
 
----
+### 🧠 3. Conversation Intelligence & Intent Classification
+Every incoming message from a prospect is analyzed in real time:
+- **`opt_out`** ("stop", "unsubscribe", "not interested", "don't message"):
+  - Advances lead status to `Unsubscribed` or `Not Interested`.
+  - Halts all automated outreach immediately.
+  - Sends a courteous closing acknowledgment: *"Understood! I have removed your number from our outreach list and won't message you again. Wishing you continued success!"*
+- **`demo_requested`** ("demo", "walkthrough", "show me", "zoom", "schedule"):
+  - Advances lead status to `Meeting Requested`.
+- **`interested`** ("yes", "tell me more", "share details", "batao"):
+  - Advances lead status to `Interested`.
+- **`pricing`** ("price", "cost", "kitna hai", "packages"):
+  - Advances lead status to `Responded` and provides exact plan pricing (Starter ₹499/mo, Gold ₹2,700/mo, Diamond custom).
+- **`follow_up_later`** ("busy", "tomorrow", "next week", "kal bat karo"):
+  - Advances lead status to `Follow-up Required`.
+- **`already_using_other`** ("already using another software"):
+  - Highlights GymStack's free 24-hour data migration from Excel/old software.
 
-## 📱 Part 3: Conversational WhatsApp Sales Agent (Step 1)
-
-- **Engine**: `@whiskeysockets/baileys` directly integrated with Gemini LLM (`gemini-3.5-flash-lite` / `gemini-3.5-flash`).
-- **Dynamic RAG Context**: Injects matching GymStack knowledge items directly into the prompt for every incoming message.
-- **Human-like Chat Style**: Keeps replies short (1-2 sentences), casual, and natural. Multilingual in English, Hindi, and Hinglish.
-- **Owner In-Chat Commands**: `#bot off`, `#bot on`, `#takeover`, `#resume`, `#takeover list`.
-- **Instant Hot Lead Email Alerts**: Alerts `sales@gymstack.in` immediately when a prospect shares gym details or contact info.
-- **Instant Brochure Delivery**: Attaches and sends `GymStack_Brochure.pdf` in chat upon request.
+### 🛡️ 4. Outreach Safety & Administrator Controls
+- **Staged Approval Workflow**: New campaigns start in `Pending Approval`. The administrator must click **"Approve"** before any messages can be sent.
+- **Pacing & Anti-Spam Delays**: Uses humanized random delays (15 to 30 seconds) between messages.
+- **Interactive Campaign Controls**: Start, Pause, Resume, and Stop campaigns at any time from the dashboard.
+- **Live Test Outreach Tool**: Administrators can send an individualized test message to their own WhatsApp number to verify formatting and tone before launching campaigns.
+- **Live Feed**: Real-time log of sent messages, prospect replies, intent classifications, and opt-outs.
 
 ---
 
-## 🔌 Complete REST API Endpoints
+## 🧠 Part 2: Product Knowledge Agent & RAG Brain (Step 3)
+
+- **14 Standard Categories**: Product Overview, Gym Management, Member Management, Membership Plans, Attendance Management, Payment Management, Trainer Management, Workout Management, Reports & Analytics, Branch Management, Subscription Pricing, Product Benefits, FAQs, Technical Requirements.
+- **Dynamic Context Injection**: Extracts keywords from incoming WhatsApp questions and retrieves matching verified features from SQLite.
+- **Zero-Hallucination Policy**: If a prospect asks about an unsupported feature (e.g. pool temperature automation, medical hardware), the AI declines to invent capabilities and escalates to administrator.
+- **Document Uploader**: Uploads and extracts text from PDF brochures, manuals, feature lists, pricing sheets, screenshots, and demo links.
+
+---
+
+## 🔍 Part 3: Global Gym Research Agent (Step 2)
+
+- **Locations**: All 28 Indian states & union territories + International markets (USA, UK, Canada, Australia, UAE, Singapore, Germany, France, Netherlands).
+- **Gym Categories**: Independent Gyms, Fitness Centres, Gym Chains, CrossFit Studios, PT Studios, Premium Clubs, Boutique Studios, Women's Fitness Centres.
+- **Discovery Sources**: OpenStreetMap / Overpass API + Google Places API.
+- **Lead Deduplication**: Multi-key matching on normalized business name + city, domain, phone, and email.
+- **15 Lifecycle Statuses**: `New`, `Researching`, `Qualified`, `Not Qualified`, `Ready for Outreach`, `Contacted`, `Responded`, `Interested`, `Meeting Requested`, `Meeting Scheduled`, `Demo Completed`, `Follow-up Required`, `Converted`, `Not Interested`, `Unsubscribed`.
+
+---
+
+## 🔌 REST API Endpoints Reference
+
+### Outreach & Campaigns Endpoints
+| Endpoint | Method | Description |
+|---|---|---|
+| `GET /api/outreach/stats` | `GET` | Outreach metrics: total campaigns, sent, replies, response rate, interested, opt-outs |
+| `GET /api/outreach/campaigns` | `GET` | List all outreach campaigns and progress |
+| `POST /api/outreach/campaigns` | `POST` | Create a new targeted campaign (staged in `pending_approval`) |
+| `POST /api/outreach/campaigns/:id/approve` | `POST` | Approve campaign for execution |
+| `POST /api/outreach/campaigns/:id/start` | `POST` | Start campaign background loop |
+| `POST /api/outreach/campaigns/:id/pause` | `POST` | Pause campaign |
+| `POST /api/outreach/campaigns/:id/resume` | `POST` | Resume paused campaign |
+| `POST /api/outreach/campaigns/:id/stop` | `POST` | Permanently terminate campaign |
+| `POST /api/outreach/test` | `POST` | Send a test outreach message to administrator's phone number |
+| `GET /api/outreach/messages` | `GET` | Paginated live messages log (`role`, `intent`, `leadId`) |
+| `GET /api/outreach/eligible-leads` | `GET` | Preview leads eligible for outreach matching filters |
+| `POST /api/outreach/preview-template` | `POST` | Render personalized template for a preview lead |
+| `GET /api/outreach/connection` | `GET` | Check if Baileys WhatsApp socket is currently connected |
 
 ### Leads & Research Endpoints
 | Endpoint | Method | Description |
 |---|---|---|
-| `GET /api/stats` | `GET` | Aggregated lead counts, qualification rates, status breakdown |
-| `GET /api/leads` | `GET` | Filtered, paginated leads (`country`, `status`, `hasWhatsApp`, etc.) |
+| `GET /api/stats` | `GET` | Aggregated lead metrics |
+| `GET /api/leads` | `GET` | Query leads with filters & pagination |
 | `PATCH /api/leads/:id` | `PATCH` | Update lead status (`Qualified`, `Meeting Scheduled`, etc.) |
-| `GET /api/leads/export/csv` | `GET` | Download leads as CSV spreadsheet |
-| `GET /api/leads/export/json` | `GET` | Download leads as JSON document |
-| `GET /api/locations` | `GET` | List mapped countries, states, cities, categories, statuses |
-| `POST /api/research/start` | `POST` | Start discovery job (`{ country, state, city, category, limit }`) |
-| `POST /api/research/pause` | `POST` | Pause running job (`{ jobId }`) |
-| `POST /api/research/resume` | `POST` | Resume paused job (`{ jobId }`) |
-| `POST /api/research/stop` | `POST` | Terminate running job (`{ jobId }`) |
-| `GET /api/research/jobs` | `GET` | List recent research jobs and discovery statistics |
-| `GET /api/research/status/:id` | `GET` | Real-time progress percentage of active job |
+| `GET /api/leads/export/csv` | `GET` | Download leads as CSV |
+| `GET /api/leads/export/json` | `GET` | Download leads as JSON |
+| `GET /api/locations` | `GET` | Mapped countries, states, cities, categories, statuses |
+| `POST /api/research/start` | `POST` | Start gym discovery job |
+| `POST /api/research/pause` | `POST` | Pause discovery job |
+| `POST /api/research/resume` | `POST` | Resume discovery job |
+| `POST /api/research/stop` | `POST` | Terminate discovery job |
 
 ### Product Knowledge Endpoints
 | Endpoint | Method | Description |
 |---|---|---|
-| `GET /api/knowledge/stats` | `GET` | Metrics: total items, categories covered, documents count, approval status |
-| `GET /api/knowledge/categories` | `GET` | List the 14 mandatory product knowledge categories |
-| `GET /api/knowledge/items` | `GET` | Query knowledge items with category and search filters |
-| `GET /api/knowledge/items/:id` | `GET` | Retrieve single knowledge item details |
-| `POST /api/knowledge/items` | `POST` | Create a new verified feature or FAQ item |
-| `PUT /api/knowledge/items/:id` | `PUT` | Update an existing knowledge item |
-| `DELETE /api/knowledge/items/:id` | `DELETE` | Remove a knowledge item |
-| `GET /api/knowledge/settings` | `GET` | Retrieve company info, demo links, support contacts |
-| `POST /api/knowledge/settings` | `POST` | Update setting key/value pair |
-| `POST /api/knowledge/approval` | `POST` | Toggle automated outreach approval status (`{ approved: true/false }`) |
-| `POST /api/knowledge/upload` | `POST` | Upload PDF brochures, manuals, feature docs (`multipart/form-data`) |
-| `GET /api/knowledge/documents` | `GET` | List all uploaded documents and indexing status |
-| `POST /api/knowledge/reindex` | `POST` | Re-index all uploaded files in `./uploads/knowledge/` |
-| `POST /api/knowledge/test-query` | `POST` | Test AI RAG retrieval simulation for any user question |
+| `GET /api/knowledge/stats` | `GET` | Knowledge base metrics & approval status |
+| `GET /api/knowledge/categories` | `GET` | List the 14 mandatory product categories |
+| `GET /api/knowledge/items` | `GET` | Query knowledge items |
+| `POST /api/knowledge/items` | `POST` | Create a verified knowledge item |
+| `PUT /api/knowledge/items/:id` | `PUT` | Update a knowledge item |
+| `DELETE /api/knowledge/items/:id` | `DELETE` | Delete a knowledge item |
+| `POST /api/knowledge/upload` | `POST` | Upload PDF brochures and manuals |
+| `POST /api/knowledge/reindex` | `POST` | Re-index all uploaded documents |
+| `POST /api/knowledge/test-query` | `POST` | Test AI RAG retrieval simulation |

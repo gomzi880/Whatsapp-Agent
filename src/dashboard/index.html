@@ -41,6 +41,9 @@
         <button onclick="switchTab('knowledge')" id="tab-knowledge-btn" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
           <i class="fa-solid fa-brain mr-1.5 text-purple-400"></i> Product Knowledge &amp; AI Brain
         </button>
+        <button onclick="switchTab('outreach')" id="tab-outreach-btn" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
+          <i class="fa-brands fa-whatsapp mr-1.5 text-green-400"></i> Outreach &amp; Live Chats
+        </button>
       </nav>
 
       <div class="flex items-center space-x-2 text-xs">
@@ -384,6 +387,157 @@
 
     </div>
 
+    <!-- ======================================================== -->
+    <!-- TAB 4: OUTREACH CAMPAIGNS & LIVE MESSAGES                -->
+    <!-- ======================================================== -->
+    <div id="tab-outreach" class="hidden space-y-5">
+
+      <!-- Outreach Summary Metrics -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Campaigns</p>
+            <p id="stat-outreach-campaigns" class="text-xl font-bold text-slate-900 mt-0.5">0</p>
+          </div>
+          <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-base">
+            <i class="fa-solid fa-bullhorn"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Messages Sent</p>
+            <p id="stat-outreach-sent" class="text-xl font-bold text-indigo-600 mt-0.5">0</p>
+          </div>
+          <div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-base">
+            <i class="fa-solid fa-paper-plane"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Replies</p>
+            <p id="stat-outreach-replies" class="text-xl font-bold text-emerald-600 mt-0.5">0</p>
+          </div>
+          <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-base">
+            <i class="fa-solid fa-reply"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Response Rate</p>
+            <p id="stat-outreach-rate" class="text-xl font-bold text-cyan-600 mt-0.5">0%</p>
+          </div>
+          <div class="w-9 h-9 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center text-base">
+            <i class="fa-solid fa-chart-line"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Interested Leads</p>
+            <p id="stat-outreach-interested" class="text-xl font-bold text-green-600 mt-0.5">0</p>
+          </div>
+          <div class="w-9 h-9 rounded-lg bg-green-50 text-green-600 flex items-center justify-center text-base">
+            <i class="fa-solid fa-handshake"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Opt-Outs / Stop</p>
+            <p id="stat-outreach-optouts" class="text-xl font-bold text-rose-600 mt-0.5">0</p>
+          </div>
+          <div class="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-base">
+            <i class="fa-solid fa-user-slash"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Campaign Actions Toolbar -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 flex items-center">
+            <i class="fa-brands fa-whatsapp text-green-600 mr-2 text-base"></i> Targeted WhatsApp Outreach Campaigns
+          </h3>
+          <p class="text-xs text-slate-500">Autonomous individualized outreach with administrator approval and safety pacing</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="openTestOutreachModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center shadow-xs">
+            <i class="fa-solid fa-mobile-screen mr-1.5 text-blue-600"></i> Send Test Message
+          </button>
+          <button onclick="openCampaignModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+            <i class="fa-solid fa-plus mr-1.5"></i> Create Campaign
+          </button>
+        </div>
+      </div>
+
+      <!-- Campaigns List Table -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-5 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Campaign Pipeline &amp; Queue</h4>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
+              <tr>
+                <th class="px-4 py-2.5">Campaign Name</th>
+                <th class="px-4 py-2.5">Target Location</th>
+                <th class="px-4 py-2.5">Category</th>
+                <th class="px-4 py-2.5 text-center">Progress (Sent/Eligible)</th>
+                <th class="px-4 py-2.5 text-center">Status</th>
+                <th class="px-4 py-2.5 text-right">Admin Controls</th>
+              </tr>
+            </thead>
+            <tbody id="campaigns-table-body" class="divide-y divide-slate-100 font-medium">
+              <tr><td colspan="6" class="text-center py-6 text-slate-400">Loading outreach campaigns...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Live Messages & Conversation Log -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-slate-50/50">
+          <div>
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center">
+              <i class="fa-solid fa-comments text-indigo-600 mr-2"></i> Live Message &amp; Reply Feed
+            </h4>
+            <p class="text-[11px] text-slate-500">Real-time prospect replies, automated responses, intent classifications and opt-outs</p>
+          </div>
+
+          <!-- Message Filter Tabs -->
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button onclick="filterMessagesRole('')" class="msg-filter-btn px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-indigo-600 text-white shadow-xs" data-role="">All</button>
+            <button onclick="filterMessagesRole('prospect')" class="msg-filter-btn px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" data-role="prospect">Prospect Replies</button>
+            <button onclick="filterMessagesRole('agent')" class="msg-filter-btn px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" data-role="agent">Agent Sent</button>
+            <button onclick="filterMessagesIntent('opt_out')" class="msg-filter-btn px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-rose-700 hover:bg-slate-100" data-intent="opt_out">Opt-Outs</button>
+            <button onclick="filterMessagesIntent('demo_requested')" class="msg-filter-btn px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-emerald-700 hover:bg-slate-100" data-intent="demo_requested">Demo Requests</button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
+              <tr>
+                <th class="px-4 py-2.5">Lead / Business</th>
+                <th class="px-4 py-2.5">WhatsApp Number</th>
+                <th class="px-4 py-2.5">Direction</th>
+                <th class="px-4 py-2.5">Message Content</th>
+                <th class="px-4 py-2.5 text-center">Intent</th>
+                <th class="px-4 py-2.5 text-right">Time</th>
+              </tr>
+            </thead>
+            <tbody id="messages-table-body" class="divide-y divide-slate-100 font-medium">
+              <tr><td colspan="6" class="text-center py-8 text-slate-400">Loading live message logs...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
   </main>
 
   <!-- ======================================================== -->
@@ -553,6 +707,110 @@
     </div>
   </div>
 
+  <!-- ======================================================== -->
+  <!-- MODAL 5: CREATE OUTREACH CAMPAIGN                        -->
+  <!-- ======================================================== -->
+  <div id="campaign-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center">
+          <i class="fa-solid fa-bullhorn text-green-600 mr-2"></i> Create Targeted Outreach Campaign
+        </h3>
+        <button onclick="closeCampaignModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Campaign Name</label>
+          <input type="text" id="campaign-name" placeholder="e.g. Maharashtra CrossFit & Gym Owners Q1" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Target Country</label>
+            <select id="campaign-country" onchange="onCampaignFilterChange()" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+              <option value="">All Countries</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Target City</label>
+            <input type="text" id="campaign-city" placeholder="e.g. Mumbai, Pune (or leave empty)" oninput="onCampaignFilterChange()" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Category Filter</label>
+            <select id="campaign-category" onchange="onCampaignFilterChange()" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+              <option value="">All Categories</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Daily Message Limit</label>
+            <input type="number" id="campaign-limit" value="20" min="1" max="100" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+          </div>
+        </div>
+
+        <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between text-xs text-blue-900">
+          <span>Eligible Prospects in Database:</span>
+          <span id="campaign-eligible-count" class="font-bold text-sm text-blue-700">0</span>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="block text-xs font-semibold text-slate-700">Customized Intro Template (Optional)</label>
+            <button type="button" onclick="resetCampaignTemplate()" class="text-[10px] text-blue-600 hover:underline">Reset to Default</button>
+          </div>
+          <textarea id="campaign-template" rows="4" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium" placeholder="Hello {ownerName}! I came across {gymName} in {city} and wanted to introduce GymStack..."></textarea>
+          <p class="text-[10px] text-slate-400 mt-0.5">Variables available: <code>{ownerName}</code>, <code>{gymName}</code>, <code>{city}</code>, <code>{category}</code></p>
+        </div>
+
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-900">
+          <i class="fa-solid fa-shield-halved mr-1 text-amber-600"></i>
+          <strong>Safety Protection:</strong> Campaigns start in <em>Pending Approval</em>. You must review and click "Approve" before any messages can be sent.
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+        <button onclick="closeCampaignModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+        <button onclick="submitNewCampaign()" class="px-4 py-2 text-xs font-bold bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm">Save &amp; Stage Campaign</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL 6: SEND TEST OUTREACH MESSAGE                      -->
+  <!-- ======================================================== -->
+  <div id="test-outreach-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center">
+          <i class="fa-solid fa-mobile-screen text-blue-600 mr-2"></i> Test Outreach Message Delivery
+        </h3>
+        <button onclick="closeTestOutreachModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+      <div class="space-y-3">
+        <p class="text-xs text-slate-500">Send an individualized sample message to your own WhatsApp number to verify layout, tone, and delivery before production campaigns.</p>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Your WhatsApp Number (with country code)</label>
+          <input type="text" id="test-outreach-phone" placeholder="e.g. 918358826116 or +919876543210" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Sample Gym Name</label>
+            <input type="text" id="test-gym-name" value="Gold Standard Fitness" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Sample Owner Name</label>
+            <input type="text" id="test-owner-name" value="Vikram" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+        <button onclick="closeTestOutreachModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+        <button id="btn-send-test" onclick="submitTestOutreach()" class="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm">
+          <i class="fa-solid fa-paper-plane mr-1.5"></i> Send Test Message
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Client-Side Scripts -->
   <script>
     let locationData = {};
@@ -562,6 +820,8 @@
     let pollInterval = null;
     let activeTab = 'research';
     let outreachApprovedState = true;
+    let currentMessageRoleFilter = '';
+    let currentMessageIntentFilter = '';
 
     document.addEventListener('DOMContentLoaded', async () => {
       await loadInitialData();
@@ -571,6 +831,9 @@
       await loadKnowledgeStats();
       await loadKnowledgeItems();
       await loadDocuments();
+      await loadOutreachStats();
+      await loadCampaigns();
+      await loadOutreachMessages();
     });
 
     function switchTab(tab) {
@@ -578,10 +841,12 @@
       document.getElementById('tab-research').classList.toggle('hidden', tab !== 'research');
       document.getElementById('tab-leads').classList.toggle('hidden', tab !== 'leads');
       document.getElementById('tab-knowledge').classList.toggle('hidden', tab !== 'knowledge');
+      document.getElementById('tab-outreach').classList.toggle('hidden', tab !== 'outreach');
 
       const btnResearch = document.getElementById('tab-research-btn');
       const btnLeads = document.getElementById('tab-leads-btn');
       const btnKnowledge = document.getElementById('tab-knowledge-btn');
+      const btnOutreach = document.getElementById('tab-outreach-btn');
 
       btnResearch.className = tab === 'research' 
         ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all'
@@ -594,6 +859,10 @@
       btnKnowledge.className = tab === 'knowledge'
         ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-purple-600 text-white shadow transition-all'
         : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
+
+      btnOutreach.className = tab === 'outreach'
+        ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-green-600 text-white shadow transition-all'
+        : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
     }
 
     function refreshCurrentTab() {
@@ -605,6 +874,11 @@
         loadKnowledgeItems();
         loadDocuments();
       }
+      if (activeTab === 'outreach') {
+        loadOutreachStats();
+        loadCampaigns();
+        loadOutreachMessages();
+      }
     }
 
     async function loadInitialData() {
@@ -615,22 +889,28 @@
           locationData = data.locations;
           statusList = data.statuses;
 
-          // Populate Research Country
+          // Populate Research Country & Campaign Country
           const countrySelect = document.getElementById('research-country');
           const filterCountry = document.getElementById('filter-country');
+          const campCountry = document.getElementById('campaign-country');
           countrySelect.innerHTML = '';
           filterCountry.innerHTML = '<option value="">All Countries</option>';
+          if (campCountry) campCountry.innerHTML = '<option value="">All Countries</option>';
 
           for (const country of Object.keys(locationData)) {
             countrySelect.innerHTML += `<option value="${country}">${country}</option>`;
             filterCountry.innerHTML += `<option value="${country}">${country}</option>`;
+            if (campCountry) campCountry.innerHTML += `<option value="${country}">${country}</option>`;
           }
 
-          // Populate Category
+          // Populate Category & Campaign Category
           const catSelect = document.getElementById('research-category');
+          const campCat = document.getElementById('campaign-category');
           catSelect.innerHTML = '';
+          if (campCat) campCat.innerHTML = '<option value="">All Categories</option>';
           data.categories.forEach(c => {
             catSelect.innerHTML += `<option value="${c}">${c}</option>`;
+            if (campCat) campCat.innerHTML += `<option value="${c}">${c}</option>`;
           });
 
           // Populate Filter Status
@@ -1385,6 +1665,378 @@
         }
       } catch (e) {
         alert('RAG Simulation failed: ' + e.message);
+      }
+    }
+
+    // ========================================================
+    // OUTREACH CAMPAIGNS & LIVE MESSAGES FUNCTIONS
+    // ========================================================
+
+    async function loadOutreachStats() {
+      try {
+        const res = await fetch('/api/outreach/stats');
+        const data = await res.json();
+        if (data.success && data.stats) {
+          const s = data.stats;
+          document.getElementById('stat-outreach-campaigns').innerText = s.totalCampaigns.toLocaleString();
+          document.getElementById('stat-outreach-sent').innerText = s.totalSent.toLocaleString();
+          document.getElementById('stat-outreach-replies').innerText = s.totalReplies.toLocaleString();
+          document.getElementById('stat-outreach-rate').innerText = `${s.responseRate}%`;
+          document.getElementById('stat-outreach-interested').innerText = s.interestedCount.toLocaleString();
+          document.getElementById('stat-outreach-optouts').innerText = s.optOutCount.toLocaleString();
+        }
+      } catch (e) {
+        console.error('Failed to load outreach stats:', e);
+      }
+    }
+
+    async function loadCampaigns() {
+      try {
+        const res = await fetch('/api/outreach/campaigns');
+        const data = await res.json();
+        if (data.success && data.campaigns) {
+          const tbody = document.getElementById('campaigns-table-body');
+          tbody.innerHTML = '';
+          if (data.campaigns.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-400">No campaigns created yet. Click \'Create Campaign\' to build your first targeted outreach!</td></tr>';
+            return;
+          }
+
+          data.campaigns.forEach(c => {
+            let statusBadge = 'bg-slate-100 text-slate-700';
+            let actionBtns = '';
+
+            if (c.status === 'pending_approval') {
+              statusBadge = 'bg-amber-100 text-amber-800';
+              actionBtns = `
+                <button onclick="approveOutreachCampaign(${c.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-[11px] font-bold shadow-xs">
+                  <i class="fa-solid fa-check mr-1"></i> Approve
+                </button>
+              `;
+            } else if (c.status === 'approved') {
+              statusBadge = 'bg-blue-100 text-blue-800';
+              actionBtns = `
+                <button onclick="startOutreachCampaign(${c.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded text-[11px] font-bold shadow-xs">
+                  <i class="fa-solid fa-play mr-1"></i> Start
+                </button>
+              `;
+            } else if (c.status === 'running') {
+              statusBadge = 'bg-emerald-100 text-emerald-800 animate-pulse';
+              actionBtns = `
+                <button onclick="pauseOutreachCampaign(${c.id})" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded text-[11px] font-bold mr-1">
+                  <i class="fa-solid fa-pause"></i>
+                </button>
+                <button onclick="stopOutreachCampaign(${c.id})" class="bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-[11px] font-bold">
+                  <i class="fa-solid fa-stop"></i>
+                </button>
+              `;
+            } else if (c.status === 'paused') {
+              statusBadge = 'bg-amber-100 text-amber-800';
+              actionBtns = `
+                <button onclick="resumeOutreachCampaign(${c.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-[11px] font-bold mr-1">
+                  <i class="fa-solid fa-play"></i> Resume
+                </button>
+                <button onclick="stopOutreachCampaign(${c.id})" class="bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-[11px] font-bold">
+                  <i class="fa-solid fa-stop"></i>
+                </button>
+              `;
+            } else {
+              statusBadge = 'bg-slate-100 text-slate-600';
+              actionBtns = `<span class="text-slate-400 text-[11px] italic">Completed</span>`;
+            }
+
+            tbody.innerHTML += `
+              <tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="px-4 py-2.5">
+                  <div class="font-bold text-slate-900">${c.name}</div>
+                  <div class="text-[10px] text-slate-400">Created: ${c.createdAt ? c.createdAt.split(' ')[0] : '-'}</div>
+                </td>
+                <td class="px-4 py-2.5">${c.targetCity && c.targetCity !== 'All' ? c.targetCity + ', ' : ''}${c.targetCountry || 'Global'}</td>
+                <td class="px-4 py-2.5">${c.targetCategory || 'All'}</td>
+                <td class="px-4 py-2.5 text-center font-bold text-slate-800">
+                  ${c.sentCount || 0} / ${c.totalEligible || 0}
+                </td>
+                <td class="px-4 py-2.5 text-center">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${statusBadge}">${c.status.replace('_', ' ')}</span>
+                </td>
+                <td class="px-4 py-2.5 text-right space-x-1">
+                  ${actionBtns}
+                </td>
+              </tr>
+            `;
+          });
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadOutreachMessages() {
+      const params = new URLSearchParams({ limit: 50 });
+      if (currentMessageRoleFilter) params.append('role', currentMessageRoleFilter);
+      if (currentMessageIntentFilter) params.append('intent', currentMessageIntentFilter);
+
+      try {
+        const res = await fetch(`/api/outreach/messages?${params.toString()}`);
+        const data = await res.json();
+        if (data.success && data.messages) {
+          const tbody = document.getElementById('messages-table-body');
+          tbody.innerHTML = '';
+          if (data.messages.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-400">No messages match the current filter.</td></tr>';
+            return;
+          }
+
+          data.messages.forEach(m => {
+            const isAgent = m.senderRole === 'agent';
+            const roleBadge = isAgent
+              ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800"><i class="fa-solid fa-robot mr-1"></i>Agent</span>'
+              : '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-800"><i class="fa-solid fa-user mr-1"></i>Prospect</span>';
+
+            let intentBadge = 'bg-slate-100 text-slate-700';
+            if (m.intent === 'interested') intentBadge = 'bg-emerald-100 text-emerald-800';
+            if (m.intent === 'demo_requested') intentBadge = 'bg-purple-100 text-purple-800';
+            if (m.intent === 'opt_out' || m.intent === 'opt_out_ack') intentBadge = 'bg-rose-100 text-rose-800';
+            if (m.intent === 'pricing') intentBadge = 'bg-amber-100 text-amber-800';
+
+            const phoneDigits = m.remoteJid ? m.remoteJid.replace(/[^0-9]/g, '') : '';
+
+            tbody.innerHTML += `
+              <tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="px-4 py-2.5 font-bold text-slate-900">${m.gymName || 'Direct WhatsApp Contact'}</td>
+                <td class="px-4 py-2.5">
+                  <a href="https://wa.me/${phoneDigits}" target="_blank" class="text-green-600 hover:underline font-semibold">
+                    +${phoneDigits}
+                  </a>
+                </td>
+                <td class="px-4 py-2.5">${roleBadge}</td>
+                <td class="px-4 py-2.5 max-w-sm">
+                  <div class="line-clamp-2 text-slate-700 text-xs font-normal" title="${m.messageText}">${m.messageText}</div>
+                </td>
+                <td class="px-4 py-2.5 text-center">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${intentBadge}">${m.intent || 'general'}</span>
+                </td>
+                <td class="px-4 py-2.5 text-right text-slate-400 text-[11px] whitespace-nowrap">
+                  ${m.createdAt ? m.createdAt.split(' ')[1] || m.createdAt : '-'}
+                </td>
+              </tr>
+            `;
+          });
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function filterMessagesRole(role) {
+      currentMessageRoleFilter = role;
+      currentMessageIntentFilter = '';
+      updateMessageFilterPills();
+      loadOutreachMessages();
+    }
+
+    function filterMessagesIntent(intent) {
+      currentMessageIntentFilter = intent;
+      currentMessageRoleFilter = '';
+      updateMessageFilterPills();
+      loadOutreachMessages();
+    }
+
+    function updateMessageFilterPills() {
+      const btns = document.querySelectorAll('.msg-filter-btn');
+      btns.forEach(b => {
+        const matchesRole = b.getAttribute('data-role') === currentMessageRoleFilter && !currentMessageIntentFilter;
+        const matchesIntent = b.getAttribute('data-intent') === currentMessageIntentFilter && !currentMessageRoleFilter;
+        if (matchesRole || matchesIntent) {
+          b.className = 'msg-filter-btn px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-indigo-600 text-white shadow-xs';
+        } else {
+          b.className = 'msg-filter-btn px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100';
+        }
+      });
+    }
+
+    // Campaign Actions
+    function openCampaignModal() {
+      document.getElementById('campaign-name').value = '';
+      document.getElementById('campaign-city').value = '';
+      document.getElementById('campaign-limit').value = '20';
+      resetCampaignTemplate();
+      document.getElementById('campaign-modal').classList.remove('hidden');
+      onCampaignFilterChange();
+    }
+
+    function closeCampaignModal() {
+      document.getElementById('campaign-modal').classList.add('hidden');
+    }
+
+    function resetCampaignTemplate() {
+      document.getElementById('campaign-template').value = `Hello {ownerName}! I came across {gymName} in {city} and wanted to introduce GymStack.
+
+GymStack is an all-in-one gym management platform that helps fitness businesses automate member attendance (biometrics & face scanners), collect fees on WhatsApp, manage trainers, and simplify daily operations.
+
+We would love to show you how GymStack can simplify day-to-day management for {gymName}.
+
+Would you be open to seeing a quick 5-minute product walkthrough or testing our 30-day free trial?
+
+(Reply 'stop' anytime if you prefer not to receive updates)`;
+    }
+
+    async function onCampaignFilterChange() {
+      const country = document.getElementById('campaign-country')?.value || '';
+      const city = document.getElementById('campaign-city')?.value || '';
+      const category = document.getElementById('campaign-category')?.value || '';
+
+      const params = new URLSearchParams({ country, city, category, minScore: 30, limit: 1000 });
+      try {
+        const res = await fetch(`/api/outreach/eligible-leads?${params.toString()}`);
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('campaign-eligible-count').innerText = data.count.toLocaleString();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function submitNewCampaign() {
+      const name = document.getElementById('campaign-name').value.trim();
+      const targetCountry = document.getElementById('campaign-country').value;
+      const targetCity = document.getElementById('campaign-city').value.trim();
+      const targetCategory = document.getElementById('campaign-category').value;
+      const dailyLimit = parseInt(document.getElementById('campaign-limit').value || 20, 10);
+      const customIntroTemplate = document.getElementById('campaign-template').value.trim();
+
+      if (!name) {
+        alert('Please give your campaign a descriptive name.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/outreach/campaigns', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, targetCountry, targetCity, targetCategory, dailyLimit, customIntroTemplate })
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeCampaignModal();
+          await loadOutreachStats();
+          await loadCampaigns();
+          alert('Campaign created and staged in Pending Approval. Review it and click "Approve" when ready.');
+        } else {
+          alert('Failed to create campaign: ' + data.error);
+        }
+      } catch (e) {
+        alert('Error creating campaign: ' + e.message);
+      }
+    }
+
+    async function approveOutreachCampaign(id) {
+      if (!confirm('Approve this outreach campaign for launching?')) return;
+      try {
+        const res = await fetch(`/api/outreach/campaigns/${id}/approve`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          await loadCampaigns();
+          await loadOutreachStats();
+        } else {
+          alert('Approval error: ' + data.error);
+        }
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    async function startOutreachCampaign(id) {
+      try {
+        const res = await fetch(`/api/outreach/campaigns/${id}/start`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          await loadCampaigns();
+          await loadOutreachStats();
+        } else {
+          alert('Cannot start campaign: ' + data.error);
+        }
+      } catch (e) {
+        alert('Start error: ' + e.message);
+      }
+    }
+
+    async function pauseOutreachCampaign(id) {
+      try {
+        await fetch(`/api/outreach/campaigns/${id}/pause`, { method: 'POST' });
+        await loadCampaigns();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    async function resumeOutreachCampaign(id) {
+      try {
+        await fetch(`/api/outreach/campaigns/${id}/resume`, { method: 'POST' });
+        await loadCampaigns();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    async function stopOutreachCampaign(id) {
+      if (!confirm('Are you sure you want to permanently stop this campaign?')) return;
+      try {
+        await fetch(`/api/outreach/campaigns/${id}/stop`, { method: 'POST' });
+        await loadCampaigns();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    // Test Outreach Modal
+    function openTestOutreachModal() {
+      document.getElementById('test-outreach-phone').value = '';
+      document.getElementById('test-outreach-modal').classList.remove('hidden');
+    }
+
+    function closeTestOutreachModal() {
+      document.getElementById('test-outreach-modal').classList.add('hidden');
+    }
+
+    async function submitTestOutreach() {
+      const testPhone = document.getElementById('test-outreach-phone').value.trim();
+      const gymName = document.getElementById('test-gym-name').value.trim();
+      const ownerName = document.getElementById('test-owner-name').value.trim();
+
+      if (!testPhone) {
+        alert('Please enter your test phone number.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-send-test');
+      btn.disabled = true;
+      btn.innerText = 'Sending...';
+
+      try {
+        const res = await fetch('/api/outreach/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            testPhone,
+            leadData: { gymName, ownerName, city: 'Indore', gymCategory: 'Fitness Centre' }
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeTestOutreachModal();
+          alert(`Test message successfully dispatched to ${testPhone}!`);
+          await loadOutreachStats();
+          await loadOutreachMessages();
+        } else {
+          alert('Test message failed: ' + data.error);
+        }
+      } catch (e) {
+        alert('Error sending test message: ' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1.5"></i> Send Test Message';
       }
     }
   </script>

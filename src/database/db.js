@@ -120,6 +120,47 @@ db.exec(`
     key TEXT PRIMARY KEY,
     value TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS outreach_campaigns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    targetCountry TEXT,
+    targetCity TEXT,
+    targetCategory TEXT,
+    minLeadScore INTEGER DEFAULT 50,
+    dailyLimit INTEGER DEFAULT 20,
+    status TEXT DEFAULT 'pending_approval',
+    customIntroTemplate TEXT,
+    totalEligible INTEGER DEFAULT 0,
+    sentCount INTEGER DEFAULT 0,
+    deliveredCount INTEGER DEFAULT 0,
+    respondedCount INTEGER DEFAULT 0,
+    interestedCount INTEGER DEFAULT 0,
+    optOutCount INTEGER DEFAULT 0,
+    failedCount INTEGER DEFAULT 0,
+    errorMessage TEXT,
+    startedAt TEXT,
+    completedAt TEXT,
+    createdAt TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS lead_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    leadId INTEGER,
+    campaignId INTEGER,
+    remoteJid TEXT NOT NULL,
+    senderRole TEXT NOT NULL,
+    messageText TEXT NOT NULL,
+    status TEXT DEFAULT 'sent',
+    intent TEXT,
+    errorMessage TEXT,
+    createdAt TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_messages_jid ON lead_messages(remoteJid);
+  CREATE INDEX IF NOT EXISTS idx_messages_leadId ON lead_messages(leadId);
+  CREATE INDEX IF NOT EXISTS idx_messages_campaignId ON lead_messages(campaignId);
+  CREATE INDEX IF NOT EXISTS idx_messages_role ON lead_messages(senderRole);
 `);
 
 /**
@@ -621,6 +662,246 @@ export function getKnowledgeStats() {
     categoriesCount,
     outreachApproved,
     categoryBreakdown
+  };
+}
+
+/**
+ * =========================================================================
+ * OUTREACH CAMPAIGNS & WHATSAPP CONVERSATION REPOSITORY
+ * =========================================================================
+ */
+
+/**
+ * Find a lead in database by phone or WhatsApp JID
+ */
+export function findLeadByPhoneOrJid(phoneOrJid) {
+  if (!phoneOrJid) return null;
+  const digits = phoneOrJid.replace(/[^0-9]/g, '');
+  if (!digits || digits.length < 7) return null;
+
+  // 1. Direct match on normalized phone
+  let lead = db.prepare('SELECT * FROM leads WHERE normalizedPhone = ?').get(digits);
+  if (lead) return lead;
+
+  // 2. Suffix match (last 10 digits for India/international matching)
+  const last10 = digits.slice(-10);
+  lead = db.prepare('SELECT * FROM leads WHERE normalizedPhone LIKE ? OR whatsappNumber LIKE ?').get(`%${last10}`, `%${last10}`);
+  return lead || null;
+}
+
+/**
+ * Update lead status directly
+ */
+export function updateLeadStatus(leadId, status, notes = null) {
+  if (!VALID_STATUSES.includes(status)) {
+    console.warn(`[Lead Status Warning]: Invalid status "${status}". Setting anyway.`);
+  }
+
+  const existing = db.prepare('SELECT notes FROM leads WHERE id = ?').get(leadId);
+  const combinedNotes = notes 
+    ? (existing && existing.notes ? `${existing.notes} | ${notes}` : notes)
+    : (existing ? existing.notes : null);
+
+  db.prepare(`
+    UPDATE leads 
+    SET status = ?, 
+        notes = ?,
+        updatedAt = datetime('now')
+    WHERE id = ?
+  `).run(status, combinedNotes, leadId);
+
+  return db.prepare('SELECT * FROM leads WHERE id = ?').get(leadId);
+}
+
+/**
+ * Record a message sent or received
+ */
+export function recordLeadMessage({ leadId = null, campaignId = null, remoteJid, senderRole, messageText, status = 'sent', intent = null, errorMessage = null }) {
+  const info = db.prepare(`
+    INSERT INTO lead_messages (leadId, campaignId, remoteJid, senderRole, messageText, status, intent, errorMessage)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(leadId, campaignId, remoteJid, senderRole, messageText, status, intent, errorMessage);
+
+  return db.prepare('SELECT * FROM lead_messages WHERE id = ?').get(info.lastInsertRowid);
+}
+
+/**
+ * Fetch messages with filters and pagination
+ */
+export function getLeadMessages({ leadId, campaignId, remoteJid, role, intent, limit = 50, offset = 0 } = {}) {
+  let whereClauses = [];
+  let params = [];
+
+  if (leadId) {
+    whereClauses.push('leadId = ?');
+    params.push(leadId);
+  }
+  if (campaignId) {
+    whereClauses.push('campaignId = ?');
+    params.push(campaignId);
+  }
+  if (remoteJid) {
+    whereClauses.push('remoteJid = ?');
+    params.push(remoteJid);
+  }
+  if (role) {
+    whereClauses.push('senderRole = ?');
+    params.push(role);
+  }
+  if (intent) {
+    whereClauses.push('intent = ?');
+    params.push(intent);
+  }
+
+  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+  const total = db.prepare(`SELECT COUNT(*) as count FROM lead_messages ${whereSql}`).get(...params).count;
+
+  const rows = db.prepare(`
+    SELECT m.*, l.gymName, l.city, l.country
+    FROM lead_messages m
+    LEFT JOIN leads l ON m.leadId = l.id
+    ${whereSql}
+    ORDER BY m.id DESC
+    LIMIT ? OFFSET ?
+  `).all(...params, limit, offset);
+
+  return { total, messages: rows };
+}
+
+/**
+ * Create a new outreach campaign
+ */
+export function createOutreachCampaign({ name, targetCountry = '', targetCity = '', targetCategory = '', minLeadScore = 50, dailyLimit = 20, customIntroTemplate = null }) {
+  // Count eligible leads matching filters
+  const eligibleLeads = getEligibleLeadsForOutreach({ country: targetCountry, city: targetCity, category: targetCategory, minScore: minLeadScore, limit: 1000 });
+
+  const info = db.prepare(`
+    INSERT INTO outreach_campaigns (
+      name, targetCountry, targetCity, targetCategory, minLeadScore, dailyLimit, 
+      status, customIntroTemplate, totalEligible
+    ) VALUES (?, ?, ?, ?, ?, ?, 'pending_approval', ?, ?)
+  `).run(
+    name || `Campaign: ${targetCategory || 'Gyms'} in ${targetCity || targetCountry || 'Global'}`,
+    targetCountry || 'All',
+    targetCity || 'All',
+    targetCategory || 'All',
+    minLeadScore,
+    dailyLimit,
+    customIntroTemplate,
+    eligibleLeads.length
+  );
+
+  return db.prepare('SELECT * FROM outreach_campaigns WHERE id = ?').get(info.lastInsertRowid);
+}
+
+/**
+ * Update outreach campaign
+ */
+export function updateOutreachCampaign(id, updateData) {
+  const existing = getOutreachCampaignById(id);
+  if (!existing) return null;
+
+  const fields = ['name', 'status', 'sentCount', 'deliveredCount', 'respondedCount', 'interestedCount', 'optOutCount', 'failedCount', 'errorMessage', 'startedAt', 'completedAt'];
+  const setClauses = [];
+  const params = [];
+
+  for (const f of fields) {
+    if (updateData[f] !== undefined) {
+      setClauses.push(`${f} = ?`);
+      params.push(updateData[f]);
+    }
+  }
+
+  if (setClauses.length === 0) return existing;
+
+  params.push(id);
+  db.prepare(`UPDATE outreach_campaigns SET ${setClauses.join(', ')} WHERE id = ?`).run(...params);
+  return getOutreachCampaignById(id);
+}
+
+/**
+ * Get all outreach campaigns
+ */
+export function getOutreachCampaigns(limit = 50) {
+  return db.prepare('SELECT * FROM outreach_campaigns ORDER BY id DESC LIMIT ?').all(limit);
+}
+
+/**
+ * Get single outreach campaign
+ */
+export function getOutreachCampaignById(id) {
+  return db.prepare('SELECT * FROM outreach_campaigns WHERE id = ?').get(id);
+}
+
+/**
+ * Query eligible leads for outreach
+ */
+export function getEligibleLeadsForOutreach({ country = '', city = '', category = '', minScore = 30, limit = 50 } = {}) {
+  let whereClauses = [
+    "(hasWhatsApp = 1 OR normalizedPhone IS NOT NULL)",
+    "normalizedPhone IS NOT NULL AND normalizedPhone != ''",
+    "status NOT IN ('Unsubscribed', 'Not Interested', 'Converted')",
+    'leadScore >= ?'
+  ];
+  let params = [minScore];
+
+  if (country && country !== 'All') {
+    whereClauses.push('country = ?');
+    params.push(country);
+  }
+  if (city && city !== 'All') {
+    whereClauses.push('city = ?');
+    params.push(city);
+  }
+  if (category && category !== 'All') {
+    whereClauses.push('gymCategory = ?');
+    params.push(category);
+  }
+
+  // Exclude leads contacted in the last 7 days
+  whereClauses.push(`
+    id NOT IN (
+      SELECT DISTINCT leadId FROM lead_messages 
+      WHERE senderRole = 'agent' 
+        AND createdAt >= datetime('now', '-7 days')
+        AND leadId IS NOT NULL
+    )
+  `);
+
+  const rows = db.prepare(`
+    SELECT * FROM leads
+    WHERE ${whereClauses.join(' AND ')}
+    ORDER BY leadScore DESC, id DESC
+    LIMIT ?
+  `).all(...params, limit);
+
+  return rows;
+}
+
+/**
+ * Aggregated metrics for outreach dashboard
+ */
+export function getOutreachStats() {
+  const totalCampaigns = db.prepare('SELECT COUNT(*) as count FROM outreach_campaigns').get().count;
+  const activeCampaigns = db.prepare("SELECT COUNT(*) as count FROM outreach_campaigns WHERE status = 'running'").get().count;
+  const totalSent = db.prepare("SELECT COUNT(*) as count FROM lead_messages WHERE senderRole = 'agent'").get().count;
+  const totalReplies = db.prepare("SELECT COUNT(*) as count FROM lead_messages WHERE senderRole = 'prospect'").get().count;
+  const interestedCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status IN ('Interested', 'Meeting Requested', 'Meeting Scheduled', 'Converted')").get().count;
+  const optOutCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status IN ('Unsubscribed', 'Not Interested')").get().count;
+  const failedCount = db.prepare("SELECT COUNT(*) as count FROM lead_messages WHERE status = 'failed'").get().count;
+
+  const responseRate = totalSent > 0 ? Math.round((totalReplies / totalSent) * 100) : 0;
+
+  return {
+    totalCampaigns,
+    activeCampaigns,
+    totalSent,
+    totalReplies,
+    responseRate,
+    interestedCount,
+    optOutCount,
+    failedCount
   };
 }
 
