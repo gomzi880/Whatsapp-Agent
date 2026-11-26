@@ -1,98 +1,131 @@
-# 🤖 WhatsApp Human-Like AI Auto-Reply Agent
+# 🏋️ GymStack AI: Global Gym Research, Lead Generation & WhatsApp Sales Automation
 
-An automated WhatsApp agent built with **Node.js**, **@whiskeysockets/baileys**, and **Google Gemini 2.5 Flash**. It links to your WhatsApp account (like WhatsApp Web) and automatically replies to incoming messages naturally, just like a real person.
+A unified AI ecosystem for gym business intelligence, automated lead research, and conversational sales automation.
 
----
-
-## 🏋️ Training the GymStack Sales Manager Agent
-
-All knowledge about **GymStack** is stored in [knowledge.js](file:///h:/agent/knowledge.js). You can edit this file anytime to update your actual pricing, features, demo links, and FAQs:
-
-- **Company Info**: Name, tagline, support number, website, and demo booking link.
-- **Key Features**: Member management, Biometric/QR attendance, WhatsApp reminders, POS, mobile apps, multi-branch, etc.
-- **Packages & Pricing**: Starter, Pro, and Enterprise pricing tiers, member limits, and included features.
-- **FAQs**: Answers to common questions (e.g. data migration from Excel, hardware compatibility, free trial).
-
-The agent will automatically use this knowledge base to answer prospect inquiries on WhatsApp, explain features, share pricing, and qualify leads into booking live demos.
+This system combines:
+1. **Global Gym Research Agent & Web Dashboard**: Discovers fitness centres across India and international markets, automatically enriches verified contact information, prevents duplicates, computes lead quality scores, and provides interactive research controls and exports.
+2. **Conversational WhatsApp Sales Agent**: Connects via `@whiskeysockets/baileys` and Google Gemini (`gemini-3.5-flash-lite`) to answer inquiries, share pricing/features, deliver PDF brochures, notify sales reps of hot leads, and qualify prospects.
 
 ---
 
-## ✨ Features
+## ⚡ Quick Start
 
-- **Human-like Chat Style**: Keeps replies short, casual, and authentic (1-2 sentences). Never sounds like a robotic customer service bot.
-- **Multilingual & Slang Adaptation**: Automatically matches the sender's language (English, Hinglish, Spanish, etc.) and conversational tone.
-- **Realistic Typing Simulator**:
-  - Displays "typing..." in WhatsApp before responding.
-  - Dynamically calculates reading and typing delay so replies don't feel instantaneous or bot-like.
-- **Conversation Memory**: Remembers recent conversation history per contact for contextual, continuous replies.
-- **Owner Chat Controls**: Control the agent right from your own WhatsApp by sending yourself commands:
-  - `#bot off` - Temporarily disable auto-replies globally.
-  - `#bot on` - Turn auto-replies back on globally.
-  - `#bot status` - Check if the agent is active.
-  - `#bot clear` - Reset conversation memory for the current chat.
-  - `#takeover` - **Human Takeover**: Pauses AI auto-reply for the current contact so you can chat personally.
-  - `#resume` - Resumes AI auto-replies for the current contact.
-  - `#takeover 919876543210` - Pause AI for a specific phone number.
-  - `#resume 919876543210` - Resume AI for a specific phone number.
-  - `#takeover list` - View all currently paused chats.
-
-- **🔥 Instant Lead Alerts**: Automatically emails the owner (`sales@gymstack.in`) whenever a prospect shares their gym name, member count, or email, with a direct 1-click WhatsApp link.
-- **📄 Direct WhatsApp PDF Brochure**: Automatically attaches and sends `GymStack_Brochure.pdf` in the chat when requested.
-- **⏰ 24-Hour Smart Follow-up Drip**: Background scheduler tracks prospect engagement and sends a gentle re-engagement check-in after 24 hours.
-- **Safety Filters**:
-  - Automatically ignores group chats by default.
-  - Optional Whitelist and Blacklist support.
-
----
-
-## 🚀 Setup Guide
-
-### 1. Get a Free Gemini API Key
-1. Go to [Google AI Studio](https://aistudio.google.com/).
-2. Click **Get API key** and create a new free API key.
-3. Open the `.env` file in this directory:
-   ```env
-   GEMINI_API_KEY=your_actual_gemini_api_key_here
-   ```
-
-### 2. Customize Your Identity & Persona
-In `.env`, customize your name and personality:
-```env
-YOUR_NAME=Alex
-PERSONA_STYLE=Friendly, casual, concise. Replies like a real human texting on WhatsApp. Never gives long formal essays. Uses natural punctuation, occasional emojis, and speaks in the same language or slang as the sender.
-```
-
-### 3. Run the Agent
-Run the start command in your terminal:
+### 1. Installation & Environment
+Ensure Node.js (v18+) is installed, then install dependencies:
 ```bash
-npm start
+npm install
 ```
 
-### 4. Link WhatsApp
-1. A QR code will display in your terminal.
-2. Open WhatsApp on your phone.
-3. Tap **Settings** (or the three dots in the top right) > **Linked Devices** > **Link a Device**.
-4. Scan the QR code shown in the terminal.
-5. Once connected, your agent will immediately start listening and auto-replying!
+Configure your `.env` file (copied or configured from your API keys):
+```env
+# Gemini AI
+GEMINI_API_KEY=your_gemini_api_key
+
+# WhatsApp Agent Persona
+YOUR_NAME=Alex
+PERSONA_STYLE=Friendly, casual, concise sales manager for GymStack
+
+# Research Dashboard Port (Optional, defaults to 3000)
+PORT=3000
+
+# Google Places API Key (Optional fallback; OpenStreetMap is enabled out-of-the-box)
+GOOGLE_PLACES_API_KEY=your_optional_key
+```
+
+### 2. Running the System
+
+You have three flexible execution options:
+
+| Command | Description |
+|---|---|
+| `npm run dashboard` | Starts the **Global Research Agent & Lead Dashboard** on [http://localhost:3000](http://localhost:3000) |
+| `npm start` | Starts the **WhatsApp Sales AI Agent** (terminal QR code pairing) |
+| `npm run all` | Runs **both** WhatsApp Agent and the Research Dashboard concurrently |
 
 ---
 
-## ⚙️ Configuration Options (`.env`)
+## 🌐 Part 1: Global Gym Research Agent & Dashboard
 
-| Variable | Default | Description |
+### 📍 Target Locations
+- **India**: All 28 states & 8 Union Territories (Madhya Pradesh, Maharashtra, Delhi, Uttar Pradesh, Gujarat, Rajasthan, Karnataka, Tamil Nadu, Telangana, West Bengal, Punjab, Haryana, Kerala, Goa, etc.) with pre-mapped major cities.
+- **International**: USA, UK, Canada, Australia, UAE, Singapore, Germany, France, Netherlands, and additional global markets.
+
+### 🏢 Target Business Categories
+- Gym Owners & Fitness Centres
+- Independent Gyms & Gym Chains
+- CrossFit Studios & Functional Fitness
+- Personal Training Studios
+- Premium Fitness Clubs & Boutique Studios
+- Women's Fitness Centres
+
+### 🔍 Authorized Discovery & Enrichment Sources
+- **OpenStreetMap & Overpass API / Nominatim**: Full global coverage without mandatory paid API keys.
+- **Google Places API**: Integrated as an optional high-accuracy discovery source when API key is provided.
+- **Web Enrichment Pipeline**: Analyzes official websites to extract publicly listed emails, Instagram, Facebook, and LinkedIn links, owner/founder mentions, and computes an information confidence level (`High`, `Medium`, `Low`).
+- **Zero-Hallucination Policy**: Missing emails or phone numbers are never fabricated.
+
+### 📊 Lead Pipeline & Deduplication
+Every lead is validated and deduplicated in SQLite (`gymstack.db`):
+- **Deduplication Matrix**: Matches on normalized name + city/country, cleaned website domain, normalized phone numbers, and normalized email.
+- **Lead Quality Scoring (0 - 100)**: Automatically calculates points based on presence of direct phone (+25), WhatsApp (+20), business email (+25), verified website (+15), social profiles (+10), and owner name (+15).
+- **15 Standard Lead Statuses**:
+  - `New`, `Researching`, `Qualified`, `Not Qualified`, `Ready for Outreach`
+  - `Contacted`, `Responded`, `Interested`, `Meeting Requested`, `Meeting Scheduled`
+  - `Demo Completed`, `Follow-up Required`, `Converted`, `Not Interested`, `Unsubscribed`
+- **Strict Compliance**: Newly discovered leads are saved for review and outreach preparation. **The system never sends unsolicited automated messages.**
+
+### 🖥️ Interactive Web Dashboard ([http://localhost:3000](http://localhost:3000))
+- **Live Filtering**: Search by Country, State, City, Category, Business Name, Owner Name, Lead Status, Minimum Lead Score, WhatsApp availability, and Email availability.
+- **Research Automation Controls**:
+  - **Start Research**: Select target country, state, city, category, and limit.
+  - **Pause Research**: Temporarily halt execution mid-job.
+  - **Resume Research**: Continue discovery from where it paused.
+  - **Stop Research**: Terminate the current job safely.
+  - **Real-Time Progress Bar**: Displays discovery count, qualified count, and percentage completion.
+- **One-Click Export**:
+  - **Export to CSV**: Filtered or complete dataset ready for CRM ingestion.
+  - **Export to JSON**: Formatted JSON array for developer workflows and automations.
+
+---
+
+## 💬 Part 2: WhatsApp Sales & Support Agent
+
+- **Conversational Memory**: Tracks per-contact conversation history for fluid, natural dialogue.
+- **Human-Like Chatting**: Realistic reading and typing delays so replies feel authentic.
+- **Owner Takeover & Control Commands** (sent directly via WhatsApp):
+  - `#takeover`: Pause AI for the active chat to talk directly.
+  - `#resume`: Unpause AI for the active chat.
+  - `#bot off` / `#bot on`: Globally disable or enable auto-replies.
+  - `#bot status`: Check agent uptime and status.
+- **Instant Hot Lead Email Alerts**: Sends immediate notification to sales reps when a prospect shares gym details or contact information.
+- **Direct PDF Brochure Delivery**: Sends the official GymStack brochure dynamically upon request.
+
+---
+
+## 🔌 REST API Endpoints
+
+The dashboard server exposes the following REST API:
+
+| Endpoint | Method | Description |
 |---|---|---|
-| `GEMINI_API_KEY` | *(Required)* | Google Gemini API key from AI Studio |
-| `YOUR_NAME` | `Alex` | Your name/identity the bot represents |
-| `PERSONA_STYLE` | Casual & friendly | Description of how the agent should text |
-| `AUTO_REPLY_ENABLED` | `true` | Set to `false` to start the bot paused |
-| `IGNORE_GROUPS` | `true` | Ignore group messages (`true` / `false`) |
-| `MIN_TYPING_DELAY_MS` | `2000` | Minimum simulated typing delay (ms) |
-| `MAX_TYPING_DELAY_MS` | `5000` | Maximum simulated typing delay (ms) |
-| `WHITELIST_NUMBERS` | *(Empty)* | Comma-separated numbers allowed (leave empty for everyone) |
-| `BLACKLIST_NUMBERS` | *(Empty)* | Comma-separated numbers to ignore |
+| `/` | `GET` | Interactive Single-Page Research & Lead Management Dashboard |
+| `/api/stats` | `GET` | Aggregated lead counts, qualification stats, and breakdown by status/country |
+| `/api/leads` | `GET` | Paginated query of leads with filters (`country`, `state`, `city`, `category`, `status`, `search`, `hasWhatsApp`, `hasEmail`, `minScore`, `page`, `limit`) |
+| `/api/leads/:id` | `GET` | Retrieve complete details for a single lead |
+| `/api/leads/:id/status`| `PATCH` | Update status (`status`, `notes`) of a specific lead |
+| `/api/leads/export/csv` | `GET` | Download filtered leads as a CSV spreadsheet |
+| `/api/leads/export/json`| `GET` | Download filtered leads as a JSON document |
+| `/api/locations` | `GET` | Pre-mapped countries, states, cities, categories, and valid lead statuses |
+| `/api/research/start` | `POST` | Start a new research job (`{ country, state, city, category, limit }`) |
+| `/api/research/pause` | `POST` | Pause an active research job (`{ jobId }`) |
+| `/api/research/resume`| `POST` | Resume a paused research job (`{ jobId }`) |
+| `/api/research/stop` | `POST` | Stop a research job (`{ jobId }`) |
+| `/api/research/jobs` | `GET` | Retrieve list and history of research jobs |
+| `/api/research/status/:id`| `GET` | Check real-time progress and counts for an ongoing job |
 
 ---
 
-## 🔒 Security & Privacy
-- All session keys are stored locally in the `./auth_info_baileys/` folder.
-- Never share your `./auth_info_baileys/` folder or `.env` file.
+## 🛡️ WhatsApp Session & Data Protection
+- WhatsApp credentials reside securely in `./auth_info_baileys/` and are preserved independently.
+- Local SQLite database resides in `./gymstack.db` (automatically created and migrated on startup, excluded from git).
+- All sensitive credentials (`.env`, `auth_info_baileys/`) are strictly git-ignored.

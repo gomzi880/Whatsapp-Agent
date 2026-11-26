@@ -4,5 +4,7 @@ auth_info_baileys/
 *.log
 leads_tracker.json
 takeover_chats.json
+gymstack.db*
+*.db
 .DS_Store
 
