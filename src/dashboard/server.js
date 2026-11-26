@@ -1,7 +1,22 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
+import multer from 'multer';
 import { fileURLToPath } from 'url';
-import db, { queryLeads, getLeadStats, VALID_STATUSES } from '../database/db.js';
+import db, {
+  queryLeads,
+  getLeadStats,
+  VALID_STATUSES,
+  getKnowledgeItems,
+  getKnowledgeItemById,
+  createKnowledgeItem,
+  updateKnowledgeItem,
+  deleteKnowledgeItem,
+  getKnowledgeSettings,
+  updateKnowledgeSetting,
+  getKnowledgeDocuments,
+  getKnowledgeStats
+} from '../database/db.js';
 import { TARGET_LOCATIONS, GYM_CATEGORIES } from '../researcher/sources/locations.js';
 import {
   startResearchJob,
@@ -11,6 +26,14 @@ import {
   getResearchJobs,
   getActiveJobStatus,
 } from '../researcher/agent.js';
+import { MANDATORY_CATEGORIES } from '../knowledge/seedData.js';
+import { retrieveRelevantKnowledge } from '../knowledge/rag.js';
+import {
+  isOutreachApproved,
+  setOutreachApproval,
+  processUploadedDocument,
+  reindexAllDocuments
+} from '../knowledge/knowledgeService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,9 +44,27 @@ const PORT = process.env.DASHBOARD_PORT || process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve Static or Single-Page Dashboard
+// Setup multer storage for Knowledge Base Documents
+const uploadsDir = path.resolve('./uploads/knowledge');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 25 * 1024 * 1024 } // 25MB max
+});
+
+app.use('/uploads', express.static(path.resolve('./uploads')));
+
+// Serve Static Dashboard
 app.get('/', (req, res) => {
-  res.send(renderDashboardHtml());
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // ==========================================
@@ -234,6 +275,165 @@ app.get('/api/leads/export/json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename="gymstack_leads_${new Date().toISOString().split('T')[0]}.json"`);
     res.send(JSON.stringify(leads, null, 2));
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================
+// PRODUCT KNOWLEDGE BASE API ENDPOINTS
+// ==========================================
+
+// 10. Knowledge Metrics & Stats
+app.get('/api/knowledge/stats', (req, res) => {
+  try {
+    const stats = getKnowledgeStats();
+    res.json({ success: true, stats });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 11. Mandatory Categories List
+app.get('/api/knowledge/categories', (req, res) => {
+  res.json({ success: true, categories: MANDATORY_CATEGORIES });
+});
+
+// 12. Query Knowledge Items (Filters & Search)
+app.get('/api/knowledge/items', (req, res) => {
+  try {
+    const { category, search, verifiedOnly, limit = 100, offset = 0 } = req.query;
+    const result = getKnowledgeItems({
+      category,
+      search,
+      verifiedOnly: verifiedOnly === 'true',
+      limit: parseInt(limit, 10),
+      offset: parseInt(offset, 10)
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 13. Get Single Knowledge Item
+app.get('/api/knowledge/items/:id', (req, res) => {
+  try {
+    const item = getKnowledgeItemById(req.params.id);
+    if (!item) return res.status(404).json({ success: false, error: 'Not found' });
+    res.json({ success: true, item });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 14. Create Knowledge Item
+app.post('/api/knowledge/items', (req, res) => {
+  try {
+    const { category, title, content, sourceType, tags, isVerified, sortOrder } = req.body;
+    if (!category || !title || !content) {
+      return res.status(400).json({ success: false, error: 'Category, title, and content are required' });
+    }
+    const item = createKnowledgeItem({ category, title, content, sourceType, tags, isVerified, sortOrder });
+    res.json({ success: true, item });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 15. Update Knowledge Item
+app.put('/api/knowledge/items/:id', (req, res) => {
+  try {
+    const updated = updateKnowledgeItem(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ success: false, error: 'Item not found' });
+    res.json({ success: true, item: updated });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 16. Delete Knowledge Item
+app.delete('/api/knowledge/items/:id', (req, res) => {
+  try {
+    const ok = deleteKnowledgeItem(req.params.id);
+    res.json({ success: ok });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 17. Knowledge Settings (Pricing, Demo Links, Company Info)
+app.get('/api/knowledge/settings', (req, res) => {
+  try {
+    const settings = getKnowledgeSettings();
+    res.json({ success: true, settings });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/knowledge/settings', (req, res) => {
+  try {
+    const { key, value } = req.body;
+    if (!key) return res.status(400).json({ success: false, error: 'Key is required' });
+    updateKnowledgeSetting(key, value);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 18. Outreach Approval Guardrail
+app.post('/api/knowledge/approval', (req, res) => {
+  try {
+    const { approved } = req.body;
+    setOutreachApproval(approved);
+    res.json({ success: true, outreachApproved: isOutreachApproved() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 19. Document & Media Upload
+app.post('/api/knowledge/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
+    const { category = 'General', title = '' } = req.body;
+    const result = await processUploadedDocument({ file: req.file, category, title });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 20. List Uploaded Documents
+app.get('/api/knowledge/documents', (req, res) => {
+  try {
+    const documents = getKnowledgeDocuments();
+    res.json({ success: true, documents });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 21. Re-index All Documents
+app.post('/api/knowledge/reindex', async (req, res) => {
+  try {
+    const result = await reindexAllDocuments();
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 22. Test AI RAG Retrieval Simulator
+app.post('/api/knowledge/test-query', (req, res) => {
+  try {
+    const { query } = req.body;
+    const result = retrieveRelevantKnowledge(query);
+    res.json({ success: true, query, result });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

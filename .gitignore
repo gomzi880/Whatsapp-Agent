@@ -6,5 +6,7 @@ leads_tracker.json
 takeover_chats.json
 gymstack.db*
 *.db
+uploads/knowledge/*
+!uploads/knowledge/.gitkeep
 .DS_Store
 

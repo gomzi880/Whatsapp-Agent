@@ -3,457 +3,777 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GymStack - Global Gym Research &amp; Lead Generation</title>
+  <title>GymStack - Global Research, Leads &amp; Product Knowledge Agent</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
     body { font-family: 'Inter', sans-serif; }
+    .badge-status { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 9999px; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
 
   <!-- Top Navigation Header -->
-  <header class="bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-800 text-white shadow-lg sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+  <header class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-lg sticky top-0 z-50 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center space-x-3">
-        <div class="bg-blue-600 text-white p-2 rounded-xl shadow-md">
-          <i class="fa-solid fa-dumbbell text-xl"></i>
+        <div class="bg-blue-600 text-white w-10 h-10 rounded-xl shadow-md flex items-center justify-center font-black text-xl">
+          <i class="fa-solid fa-dumbbell"></i>
         </div>
         <div>
-          <h1 class="text-xl font-bold tracking-tight">GymStack</h1>
-          <p class="text-xs text-blue-200">Global Gym Research &amp; AI Lead Generation</p>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-lg font-bold tracking-tight">GymStack</h1>
+            <span class="text-[11px] font-semibold px-2 py-0.5 bg-blue-900/60 border border-blue-700/60 text-blue-300 rounded-full">AI Sales &amp; Research Platform</span>
+          </div>
+          <p class="text-xs text-slate-400">Global Discovery, Real-time RAG Knowledge &amp; WhatsApp Automation</p>
         </div>
       </div>
 
       <!-- Navigation Tabs -->
-      <nav class="flex items-center space-x-2 bg-blue-950/60 p-1.5 rounded-xl border border-blue-700/50">
-        <button onclick="switchTab('research')" id="tab-research-btn" class="px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all">
-          <i class="fa-solid fa-satellite-dish mr-1.5"></i> Global Research Hub
+      <nav class="flex items-center space-x-1.5 bg-slate-950/80 p-1.5 rounded-xl border border-slate-800">
+        <button onclick="switchTab('research')" id="tab-research-btn" class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all">
+          <i class="fa-solid fa-satellite-dish mr-1.5"></i> Global Research
         </button>
-        <button onclick="switchTab('leads')" id="tab-leads-btn" class="px-4 py-2 text-xs font-semibold rounded-lg text-blue-200 hover:text-white transition-all">
+        <button onclick="switchTab('leads')" id="tab-leads-btn" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
           <i class="fa-solid fa-users-viewfinder mr-1.5"></i> Leads Database
         </button>
+        <button onclick="switchTab('knowledge')" id="tab-knowledge-btn" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
+          <i class="fa-solid fa-brain mr-1.5 text-purple-400"></i> Product Knowledge &amp; AI Brain
+        </button>
       </nav>
+
+      <div class="flex items-center space-x-2 text-xs">
+        <span class="inline-flex items-center bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 px-2.5 py-1.5 rounded-lg font-medium">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-1.5"></span> WhatsApp Connected
+        </span>
+        <button onclick="refreshCurrentTab()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg font-medium transition flex items-center">
+          <i class="fa-solid fa-arrows-rotate mr-1.5"></i> Refresh
+        </button>
+      </div>
     </div>
   </header>
 
-  <!-- Metric Summary Cards -->
-  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 w-full">
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-      <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+  <!-- Outreach Safety Guardrail Banner -->
+  <div id="outreach-banner" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 w-full">
+    <div id="outreach-alert-box" class="p-3.5 rounded-xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 transition-all">
+      <div class="flex items-center space-x-3">
+        <div id="outreach-icon" class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"></div>
         <div>
-          <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Total Leads</p>
-          <p id="stat-total" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+          <h4 id="outreach-title" class="text-xs font-bold uppercase tracking-wider"></h4>
+          <p id="outreach-desc" class="text-xs text-slate-600 mt-0.5"></p>
         </div>
-        <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
+      </div>
+      <button id="outreach-toggle-btn" onclick="toggleOutreachApproval()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+      </button>
+    </div>
+  </div>
+
+  <!-- Metric Summary Cards -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 w-full">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Total Leads</p>
+          <p id="stat-total" class="text-xl font-bold text-slate-900 mt-0.5">0</p>
+        </div>
+        <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-base">
           <i class="fa-solid fa-building"></i>
         </div>
       </div>
 
-      <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
         <div>
-          <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Qualified Leads</p>
-          <p id="stat-qualified" class="text-2xl font-bold text-emerald-600 mt-1">0</p>
+          <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Qualified</p>
+          <p id="stat-qualified" class="text-xl font-bold text-emerald-600 mt-0.5">0</p>
         </div>
-        <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+        <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-base">
           <i class="fa-solid fa-circle-check"></i>
         </div>
       </div>
 
-      <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
         <div>
-          <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">With WhatsApp</p>
-          <p id="stat-whatsapp" class="text-2xl font-bold text-green-600 mt-1">0</p>
+          <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">WhatsApp Ready</p>
+          <p id="stat-whatsapp" class="text-xl font-bold text-green-600 mt-0.5">0</p>
         </div>
-        <div class="w-10 h-10 rounded-lg bg-green-50 text-green-600 flex items-center justify-center text-lg">
+        <div class="w-9 h-9 rounded-lg bg-green-50 text-green-600 flex items-center justify-center text-base">
           <i class="fa-brands fa-whatsapp"></i>
         </div>
       </div>
 
-      <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
         <div>
-          <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">With Email</p>
-          <p id="stat-email" class="text-2xl font-bold text-indigo-600 mt-1">0</p>
+          <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Verified Emails</p>
+          <p id="stat-email" class="text-xl font-bold text-indigo-600 mt-0.5">0</p>
         </div>
-        <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+        <div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-base">
           <i class="fa-solid fa-envelope"></i>
         </div>
       </div>
 
-      <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between col-span-2 sm:col-span-1">
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
         <div>
-          <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Countries Covered</p>
-          <p id="stat-countries" class="text-2xl font-bold text-amber-600 mt-1">0</p>
+          <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Knowledge Items</p>
+          <p id="stat-knowledge-items" class="text-xl font-bold text-purple-600 mt-0.5">38</p>
         </div>
-        <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
-          <i class="fa-solid fa-globe"></i>
+        <div class="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-base">
+          <i class="fa-solid fa-lightbulb"></i>
+        </div>
+      </div>
+
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Categories Active</p>
+          <p id="stat-knowledge-cats" class="text-xl font-bold text-amber-600 mt-0.5">14 / 14</p>
+        </div>
+        <div class="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-base">
+          <i class="fa-solid fa-layer-group"></i>
         </div>
       </div>
     </div>
   </section>
 
   <!-- Main Workspace -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1">
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 w-full flex-1">
 
-    <!-- ========================================== -->
-    <!-- TAB 1: GLOBAL RESEARCH HUB                -->
-    <!-- ========================================== -->
-    <div id="tab-research" class="space-y-6">
-      
-      <!-- Research Control Panel Card -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <div class="flex items-center justify-between pb-5 border-b border-slate-100">
+    <!-- ======================================================== -->
+    <!-- TAB 1: GLOBAL RESEARCH HUB                               -->
+    <!-- ======================================================== -->
+    <div id="tab-research" class="space-y-5">
+      <!-- Research Control Panel -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
           <div>
-            <h2 class="text-lg font-bold text-slate-900 flex items-center">
-              <i class="fa-solid fa-compass text-blue-600 mr-2.5"></i> Launch Global Gym Discovery
+            <h2 class="text-base font-bold text-slate-900 flex items-center">
+              <i class="fa-solid fa-satellite-dish text-blue-600 mr-2"></i> Launch Target Gym Research Task
             </h2>
-            <p class="text-xs text-slate-500 mt-0.5">Discover verified gym businesses across Indian states &amp; international markets.</p>
+            <p class="text-xs text-slate-500">Autonomous discovery across India and international fitness hubs</p>
           </div>
-          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span> Authorized Public Sources Ready
+          <span class="text-xs font-semibold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md border border-blue-200">
+            Multi-Source Engine (OSM + Google)
           </span>
         </div>
 
-        <form id="research-form" class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <!-- Country -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Target Country</label>
-            <select id="sel-country" onchange="onCountryChange()" class="w-full text-sm rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-slate-50 p-2.5">
-              <!-- Populated via JS -->
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Target Country</label>
+            <select id="research-country" onchange="onCountryChange()" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium focus:ring-blue-500 focus:border-blue-500">
             </select>
           </div>
-
-          <!-- State -->
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1.5">State / Region</label>
-            <select id="sel-state" onchange="onStateChange()" class="w-full text-sm rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-slate-50 p-2.5">
-              <!-- Populated via JS -->
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Target State / Region</label>
+            <select id="research-state" onchange="onStateChange()" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium focus:ring-blue-500 focus:border-blue-500">
             </select>
           </div>
-
-          <!-- City -->
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Target City</label>
-            <input type="text" id="sel-city" placeholder="e.g. Indore, Dubai, London" class="w-full text-sm rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-slate-50 p-2.5" required>
-          </div>
-
-          <!-- Gym Category -->
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Gym Category</label>
-            <select id="sel-category" class="w-full text-sm rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-slate-50 p-2.5">
-              <!-- Populated via JS -->
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Target City</label>
+            <select id="research-city" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium focus:ring-blue-500 focus:border-blue-500">
             </select>
           </div>
-
-          <!-- Limit -->
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Lead Limit</label>
-            <input type="number" id="sel-limit" min="5" max="100" value="25" class="w-full text-sm rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-slate-50 p-2.5">
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Business Category</label>
+            <select id="research-category" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium focus:ring-blue-500 focus:border-blue-500">
+            </select>
           </div>
-        </form>
-
-        <!-- Action Controls -->
-        <div class="mt-6 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center space-x-2">
-            <button type="button" onclick="startResearch()" id="btn-start" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center transition-all">
-              <i class="fa-solid fa-play mr-2"></i> Start Research
-            </button>
-            <button type="button" onclick="pauseCurrentJob()" id="btn-pause" disabled class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center transition-all">
-              <i class="fa-solid fa-pause mr-1.5"></i> Pause
-            </button>
-            <button type="button" onclick="resumeCurrentJob()" id="btn-resume" disabled class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center transition-all">
-              <i class="fa-solid fa-forward mr-1.5"></i> Resume
-            </button>
-            <button type="button" onclick="stopCurrentJob()" id="btn-stop" disabled class="px-4 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center transition-all">
-              <i class="fa-solid fa-stop mr-1.5"></i> Stop
-            </button>
-          </div>
-
-          <div id="live-job-status" class="text-xs text-slate-500 flex items-center font-medium">
-            <span class="w-2 h-2 rounded-full bg-slate-300 mr-2"></span> Research agent is idle
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Discovery Limit</label>
+            <input type="number" id="research-limit" value="10" min="1" max="100" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium focus:ring-blue-500 focus:border-blue-500">
           </div>
         </div>
 
-        <!-- Progress Bar (shown when running) -->
-        <div id="progress-container" class="mt-5 hidden">
-          <div class="flex justify-between text-xs font-medium text-slate-600 mb-1.5">
-            <span id="progress-text">Researching candidate fitness centres...</span>
-            <span id="progress-pct">0%</span>
+        <div class="pt-2 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center space-x-2">
+            <button id="btn-start" onclick="startResearch()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+              <i class="fa-solid fa-play mr-2"></i> Start Research
+            </button>
+            <button id="btn-pause" onclick="pauseResearch()" class="hidden bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+              <i class="fa-solid fa-pause mr-2"></i> Pause
+            </button>
+            <button id="btn-resume" onclick="resumeResearch()" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+              <i class="fa-solid fa-play mr-2"></i> Resume
+            </button>
+            <button id="btn-stop" onclick="stopResearch()" class="hidden bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+              <i class="fa-solid fa-stop mr-2"></i> Stop
+            </button>
           </div>
-          <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-            <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+
+          <div id="progress-container" class="w-full sm:w-80 space-y-1">
+            <div class="flex justify-between text-[11px] font-semibold text-slate-600">
+              <span id="progress-label">Ready</span>
+              <span id="progress-percent">0%</span>
+            </div>
+            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
+              <div id="progress-bar" class="bg-blue-600 h-full w-0 transition-all duration-300"></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Research History Table -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 class="text-sm font-bold text-slate-900 flex items-center">
-            <i class="fa-solid fa-clock-rotate-left text-slate-500 mr-2"></i> Recent Research Jobs
+      <!-- Recent Jobs Table -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Research Task History</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
+              <tr>
+                <th class="px-4 py-2.5">Task Name</th>
+                <th class="px-4 py-2.5">Target Location</th>
+                <th class="px-4 py-2.5">Category</th>
+                <th class="px-4 py-2.5 text-center">Discovered</th>
+                <th class="px-4 py-2.5 text-center">Qualified</th>
+                <th class="px-4 py-2.5 text-center">Status</th>
+                <th class="px-4 py-2.5">Date</th>
+              </tr>
+            </thead>
+            <tbody id="jobs-table-body" class="divide-y divide-slate-100 font-medium">
+              <tr><td colspan="7" class="text-center py-6 text-slate-400">Loading research task history...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 2: LEADS DATABASE                                    -->
+    <!-- ======================================================== -->
+    <div id="tab-leads" class="hidden space-y-4">
+      <!-- Filters and Search Toolbar -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+          <input type="text" id="lead-search" placeholder="Search gym, owner, city, email..." oninput="debounceFilterLeads()" class="text-xs border border-slate-300 rounded-lg p-2 w-56 bg-slate-50 focus:ring-blue-500 focus:border-blue-500">
+          <select id="filter-country" onchange="loadLeads(1)" class="text-xs border border-slate-300 rounded-lg p-2 bg-slate-50">
+            <option value="">All Countries</option>
+          </select>
+          <select id="filter-status" onchange="loadLeads(1)" class="text-xs border border-slate-300 rounded-lg p-2 bg-slate-50">
+            <option value="">All Statuses</option>
+          </select>
+          <label class="inline-flex items-center text-xs font-semibold text-slate-700 cursor-pointer">
+            <input type="checkbox" id="filter-whatsapp" onchange="loadLeads(1)" class="rounded border-slate-300 text-green-600 focus:ring-green-500 mr-1.5">
+            WhatsApp
+          </label>
+          <label class="inline-flex items-center text-xs font-semibold text-slate-700 cursor-pointer">
+            <input type="checkbox" id="filter-email" onchange="loadLeads(1)" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 mr-1.5">
+            Email
+          </label>
+        </div>
+
+        <div class="flex items-center space-x-2 w-full md:w-auto justify-end">
+          <a id="btn-export-csv" href="/api/leads/export/csv" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center shadow-sm">
+            <i class="fa-solid fa-file-csv text-emerald-600 mr-1.5"></i> Export CSV
+          </a>
+          <a id="btn-export-json" href="/api/leads/export/json" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center shadow-sm">
+            <i class="fa-solid fa-code text-blue-600 mr-1.5"></i> Export JSON
+          </a>
+        </div>
+      </div>
+
+      <!-- Leads Table -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-5 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <p class="text-xs font-bold text-slate-700 uppercase">Leads Count: <span id="leads-count-text" class="text-blue-600 font-extrabold">0</span></p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
+              <tr>
+                <th class="px-4 py-2.5">Gym Name</th>
+                <th class="px-3 py-2.5">Category</th>
+                <th class="px-3 py-2.5">Location</th>
+                <th class="px-3 py-2.5">WhatsApp / Phone</th>
+                <th class="px-3 py-2.5">Email &amp; Web</th>
+                <th class="px-3 py-2.5">Owner / Founder</th>
+                <th class="px-3 py-2.5 text-center">Score</th>
+                <th class="px-3 py-2.5">Status</th>
+              </tr>
+            </thead>
+            <tbody id="leads-table-body" class="divide-y divide-slate-100 font-medium">
+              <tr><td colspan="8" class="text-center py-8 text-slate-400">Loading verified gym leads...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="px-4 py-3 border-t border-slate-100 flex justify-between items-center bg-slate-50/50" id="pagination-controls">
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 3: PRODUCT KNOWLEDGE & AI BRAIN                      -->
+    <!-- ======================================================== -->
+    <div id="tab-knowledge" class="hidden space-y-5">
+      
+      <!-- Toolbar: Actions & Search -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+          <input type="text" id="knowledge-search" placeholder="Search features, FAQs, specs, pricing..." oninput="debounceFilterKnowledge()" class="text-xs border border-slate-300 rounded-lg p-2 w-64 bg-slate-50 focus:ring-purple-500 focus:border-purple-500">
+          <select id="knowledge-category-filter" onchange="loadKnowledgeItems()" class="text-xs border border-slate-300 rounded-lg p-2 bg-slate-50 font-medium">
+            <option value="All">All 14 Categories</option>
+          </select>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-start lg:justify-end">
+          <button onclick="openKnowledgeModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+            <i class="fa-solid fa-plus mr-1.5"></i> Add Feature
+          </button>
+          <button onclick="openUploadModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+            <i class="fa-solid fa-file-arrow-up mr-1.5"></i> Upload Docs
+          </button>
+          <button onclick="openSettingsModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+            <i class="fa-solid fa-tags mr-1.5"></i> Pricing &amp; Demo
+          </button>
+          <button onclick="openTestRagModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+            <i class="fa-solid fa-robot mr-1.5"></i> Test AI RAG
+          </button>
+          <button onclick="reindexDocuments()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center shadow-sm">
+            <i class="fa-solid fa-arrows-spin mr-1.5"></i> Re-Index
+          </button>
+        </div>
+      </div>
+
+      <!-- Category Filter Pills Bar -->
+      <div id="category-pills-bar" class="flex flex-wrap gap-1.5 py-1">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Knowledge Base Items Cards Grid -->
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">
+            Verified Knowledge Items (<span id="knowledge-count-badge" class="text-purple-600 font-extrabold">0</span>)
           </h3>
-          <button onclick="loadJobHistory()" class="text-xs text-blue-600 hover:text-blue-700 font-semibold">
-            <i class="fa-solid fa-arrows-rotate mr-1"></i> Refresh
+          <span class="text-[11px] text-slate-500 italic">WhatsApp AI accesses these items dynamically in real time</span>
+        </div>
+
+        <div id="knowledge-items-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="col-span-full py-12 text-center text-slate-400">Loading GymStack Product Knowledge...</div>
+        </div>
+      </div>
+
+      <!-- Uploaded Documents & Media Files -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-6">
+        <div class="px-5 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div>
+            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Product Documents &amp; Media Attachments</h3>
+            <p class="text-[11px] text-slate-500">PDF brochures, feature sheets, pricing docs &amp; demo video links</p>
+          </div>
+          <button onclick="openUploadModal()" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center">
+            <i class="fa-solid fa-upload mr-1"></i> Upload New
           </button>
         </div>
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-100 text-xs">
-            <thead class="bg-slate-50 text-slate-600 font-semibold">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
               <tr>
-                <th class="px-6 py-3 text-left">Job ID</th>
-                <th class="px-6 py-3 text-left">Target Search</th>
-                <th class="px-6 py-3 text-center">Limit</th>
-                <th class="px-6 py-3 text-center">Discovered</th>
-                <th class="px-6 py-3 text-center">Qualified</th>
-                <th class="px-6 py-3 text-center">Status</th>
-                <th class="px-6 py-3 text-right">Date</th>
+                <th class="px-4 py-2.5">File Name</th>
+                <th class="px-4 py-2.5">Type</th>
+                <th class="px-4 py-2.5">Category</th>
+                <th class="px-4 py-2.5">Size</th>
+                <th class="px-4 py-2.5">Status</th>
+                <th class="px-4 py-2.5">Uploaded At</th>
+                <th class="px-4 py-2.5 text-right">Action</th>
               </tr>
             </thead>
-            <tbody id="jobs-table-body" class="divide-y divide-slate-100 font-medium text-slate-700">
-              <!-- Populated via JS -->
+            <tbody id="documents-table-body" class="divide-y divide-slate-100 font-medium">
+              <tr><td colspan="7" class="text-center py-6 text-slate-400">No documents uploaded yet. Click 'Upload Docs' to add PDF brochures and manuals!</td></tr>
             </tbody>
           </table>
         </div>
       </div>
+
     </div>
 
-
-    <!-- ========================================== -->
-    <!-- TAB 2: LEADS DATABASE & CRM               -->
-    <!-- ========================================== -->
-    <div id="tab-leads" class="hidden space-y-6">
-
-      <!-- Filter & Search Card -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
-          <div>
-            <h2 class="text-lg font-bold text-slate-900 flex items-center">
-              <i class="fa-solid fa-filter text-blue-600 mr-2.5"></i> Search &amp; Filter Verified Leads
-            </h2>
-            <p class="text-xs text-slate-500 mt-0.5">Filter discovered gym businesses across categories, contacts, and lead scores.</p>
-          </div>
-          <div class="flex items-center space-x-2">
-            <a id="btn-export-csv" href="/api/leads/export/csv" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center transition-all">
-              <i class="fa-solid fa-file-csv mr-1.5 text-sm"></i> Export CSV
-            </a>
-            <a id="btn-export-json" href="/api/leads/export/json" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center transition-all">
-              <i class="fa-solid fa-code mr-1.5 text-sm"></i> Export JSON
-            </a>
-          </div>
-        </div>
-
-        <!-- Filter Controls Grid -->
-        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1">Search Keywords</label>
-            <input type="text" id="flt-search" placeholder="Gym name, owner, city..." oninput="debounceLeadsLoad()" class="w-full text-xs rounded-lg border-slate-300 p-2 bg-slate-50 focus:ring-blue-500 focus:border-blue-500">
-          </div>
-
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1">Country</label>
-            <select id="flt-country" onchange="loadLeads(1)" class="w-full text-xs rounded-lg border-slate-300 p-2 bg-slate-50 focus:ring-blue-500 focus:border-blue-500">
-              <option value="">All Countries</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1">Lead Status</label>
-            <select id="flt-status" onchange="loadLeads(1)" class="w-full text-xs rounded-lg border-slate-300 p-2 bg-slate-50 focus:ring-blue-500 focus:border-blue-500">
-              <option value="">All Statuses</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1">Min Lead Score</label>
-            <select id="flt-score" onchange="loadLeads(1)" class="w-full text-xs rounded-lg border-slate-300 p-2 bg-slate-50 focus:ring-blue-500 focus:border-blue-500">
-              <option value="">Any Score</option>
-              <option value="40">40+ (Basic Info)</option>
-              <option value="60">60+ (Qualified Contact)</option>
-              <option value="80">80+ (High Value Lead)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="mt-3 flex items-center space-x-6 text-xs text-slate-700 font-medium">
-          <label class="inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="flt-has-whatsapp" onchange="loadLeads(1)" class="rounded border-slate-300 text-green-600 focus:ring-green-500">
-            <span class="ml-2 flex items-center"><i class="fa-brands fa-whatsapp text-green-600 mr-1"></i> Has WhatsApp Only</span>
-          </label>
-          <label class="inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="flt-has-email" onchange="loadLeads(1)" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-            <span class="ml-2 flex items-center"><i class="fa-solid fa-envelope text-blue-600 mr-1"></i> Has Email Only</span>
-          </label>
-        </div>
-      </div>
-
-      <!-- Leads Data Table Card -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <p class="text-xs font-bold text-slate-800">
-            Showing <span id="leads-count-text">0</span> verified gym leads
-          </p>
-          <div class="flex items-center space-x-2" id="pagination-controls">
-            <!-- Populated via JS -->
-          </div>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-100 text-xs">
-            <thead class="bg-slate-50 text-slate-600 font-semibold">
-              <tr>
-                <th class="px-5 py-3 text-left">Gym Name</th>
-                <th class="px-4 py-3 text-left">Category</th>
-                <th class="px-4 py-3 text-left">Location</th>
-                <th class="px-4 py-3 text-left">Phone / WhatsApp</th>
-                <th class="px-4 py-3 text-left">Email / Website</th>
-                <th class="px-4 py-3 text-left">Owner / Founder</th>
-                <th class="px-4 py-3 text-center">Score</th>
-                <th class="px-4 py-3 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody id="leads-table-body" class="divide-y divide-slate-100 font-medium text-slate-700">
-              <!-- Populated via JS -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
   </main>
 
+  <!-- ======================================================== -->
+  <!-- MODAL 1: ADD / EDIT KNOWLEDGE ITEM                       -->
+  <!-- ======================================================== -->
+  <div id="knowledge-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 id="knowledge-modal-title" class="text-sm font-bold text-slate-900">Add Product Knowledge Item</h3>
+        <button onclick="closeKnowledgeModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+      <input type="hidden" id="item-id">
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Category (1 of 14)</label>
+          <select id="item-category" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Feature / Question Title</label>
+          <input type="text" id="item-title" placeholder="e.g. Biometric & Facial Recognition Check-In" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Details &amp; Verified Capabilities</label>
+          <textarea id="item-content" rows="5" placeholder="Accurate, factual description of supported capabilities..." class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium"></textarea>
+          <p class="text-[10px] text-slate-400 mt-1">Rule: Never include unsupported features or promises. Stick strictly to confirmed GymStack abilities.</p>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Source Type</label>
+            <select id="item-source-type" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+              <option value="manual">Manual Entry</option>
+              <option value="faq">FAQ</option>
+              <option value="pricing">Subscription Pricing</option>
+              <option value="document">Extracted from Document</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Tags (Comma-separated)</label>
+            <input type="text" id="item-tags" placeholder="e.g. biometric, attendance, fingerprint" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+          </div>
+        </div>
+        <div class="flex items-center space-x-2 pt-1">
+          <input type="checkbox" id="item-verified" checked class="rounded border-slate-300 text-purple-600 focus:ring-purple-500">
+          <label for="item-verified" class="text-xs font-semibold text-slate-700 cursor-pointer">Mark as Officially Verified by Admin</label>
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+        <button onclick="closeKnowledgeModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+        <button onclick="saveKnowledgeItem()" class="px-4 py-2 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-sm">Save Knowledge Item</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL 2: UPLOAD DOCUMENTS                                -->
+  <!-- ======================================================== -->
+  <div id="upload-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center">
+          <i class="fa-solid fa-file-arrow-up text-blue-600 mr-2"></i> Upload Document or Brochure
+        </h3>
+        <button onclick="closeUploadModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Select File (PDF, TXT, MD, Images, Docs)</label>
+          <input type="file" id="upload-file-input" class="w-full text-xs rounded-lg border border-slate-300 p-2 bg-slate-50 file:mr-3 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Category Target</label>
+          <select id="upload-category" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Document Title / Note (Optional)</label>
+          <input type="text" id="upload-title" placeholder="e.g. Official GymStack 2026 Feature Sheet" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+        <button onclick="closeUploadModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+        <button id="btn-submit-upload" onclick="submitUpload()" class="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm">Upload &amp; Index</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL 3: PRICING & DEMO LINKS SETTINGS                   -->
+  <!-- ======================================================== -->
+  <div id="settings-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center">
+          <i class="fa-solid fa-tags text-emerald-600 mr-2"></i> GymStack Pricing &amp; Demo Configuration
+        </h3>
+        <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Official Self-Registration &amp; Demo Link</label>
+          <input type="text" id="setting-demo-link" class="w-full rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Video Demo Link (Loom / YouTube)</label>
+          <input type="text" id="setting-video-demo" class="w-full rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Support Phone / WhatsApp</label>
+          <input type="text" id="setting-support-phone" class="w-full rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Free Trial Duration &amp; Policy</label>
+          <input type="text" id="setting-trial-text" class="w-full rounded-lg border-slate-300 bg-slate-50 p-2 font-medium">
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+        <button onclick="closeSettingsModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+        <button onclick="saveSettings()" class="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm">Save Configuration</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL 4: TEST AI RAG RETRIEVAL SIMULATOR                 -->
+  <!-- ======================================================== -->
+  <div id="rag-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center">
+          <i class="fa-solid fa-robot text-indigo-600 mr-2"></i> AI Knowledge Retrieval Simulator
+        </h3>
+        <button onclick="closeTestRagModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+      <div class="space-y-3">
+        <p class="text-xs text-slate-500">Test any gym owner question to see which verified GymStack knowledge items the AI retrieves and whether confidence is verified or unsupported.</p>
+        <div class="flex gap-2">
+          <input type="text" id="rag-test-input" placeholder="e.g. Can I integrate my biometric fingerprint scanner?" class="flex-1 text-xs border border-slate-300 rounded-lg p-2.5 bg-slate-50 font-medium">
+          <button onclick="runRagSimulation()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+            <i class="fa-solid fa-magnifying-glass mr-1.5"></i> Test RAG
+          </button>
+        </div>
+
+        <div id="rag-test-result" class="hidden space-y-3 pt-2">
+          <div class="p-3 rounded-lg border flex items-center justify-between" id="rag-confidence-card">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Confidence Assessment</span>
+              <div id="rag-confidence-text" class="text-sm font-bold mt-0.5"></div>
+            </div>
+            <span id="rag-score-badge" class="px-2.5 py-1 text-xs font-bold rounded-full"></span>
+          </div>
+
+          <div>
+            <h4 class="text-xs font-bold text-slate-700 uppercase mb-1">Matched Knowledge Items</h4>
+            <div id="rag-matched-items" class="space-y-2"></div>
+          </div>
+
+          <div>
+            <h4 class="text-xs font-bold text-slate-700 uppercase mb-1">System Prompt Context Injection Preview</h4>
+            <pre id="rag-prompt-preview" class="p-3 bg-slate-900 text-slate-200 text-[11px] rounded-lg overflow-x-auto max-h-48 font-mono whitespace-pre-wrap"></pre>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end pt-3 border-t border-slate-100">
+        <button onclick="closeTestRagModal()" class="px-4 py-2 text-xs font-bold bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client-Side Scripts -->
   <script>
     let locationData = {};
-    let categoryList = [];
     let statusList = [];
+    let categoriesList = [];
     let activeJobId = null;
     let pollInterval = null;
-    let debounceTimer = null;
+    let activeTab = 'research';
+    let outreachApprovedState = true;
 
-    // Initialize Dashboard
-    window.onload = async function() {
-      await loadLocations();
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadInitialData();
       await loadStats();
-      await loadJobHistory();
+      await loadJobs();
       await loadLeads(1);
-    };
+      await loadKnowledgeStats();
+      await loadKnowledgeItems();
+      await loadDocuments();
+    });
 
     function switchTab(tab) {
-      if (tab === 'research') {
-        document.getElementById('tab-research').classList.remove('hidden');
-        document.getElementById('tab-leads').classList.add('hidden');
-        document.getElementById('tab-research-btn').className = "px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow";
-        document.getElementById('tab-leads-btn').className = "px-4 py-2 text-xs font-semibold rounded-lg text-blue-200 hover:text-white";
-        loadJobHistory();
+      activeTab = tab;
+      document.getElementById('tab-research').classList.toggle('hidden', tab !== 'research');
+      document.getElementById('tab-leads').classList.toggle('hidden', tab !== 'leads');
+      document.getElementById('tab-knowledge').classList.toggle('hidden', tab !== 'knowledge');
+
+      const btnResearch = document.getElementById('tab-research-btn');
+      const btnLeads = document.getElementById('tab-leads-btn');
+      const btnKnowledge = document.getElementById('tab-knowledge-btn');
+
+      btnResearch.className = tab === 'research' 
+        ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all'
+        : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
+
+      btnLeads.className = tab === 'leads'
+        ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all'
+        : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
+
+      btnKnowledge.className = tab === 'knowledge'
+        ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-purple-600 text-white shadow transition-all'
+        : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
+    }
+
+    function refreshCurrentTab() {
+      loadStats();
+      if (activeTab === 'research') loadJobs();
+      if (activeTab === 'leads') loadLeads(1);
+      if (activeTab === 'knowledge') {
+        loadKnowledgeStats();
+        loadKnowledgeItems();
+        loadDocuments();
+      }
+    }
+
+    async function loadInitialData() {
+      try {
+        const res = await fetch('/api/locations');
+        const data = await res.json();
+        if (data.success) {
+          locationData = data.locations;
+          statusList = data.statuses;
+
+          // Populate Research Country
+          const countrySelect = document.getElementById('research-country');
+          const filterCountry = document.getElementById('filter-country');
+          countrySelect.innerHTML = '';
+          filterCountry.innerHTML = '<option value="">All Countries</option>';
+
+          for (const country of Object.keys(locationData)) {
+            countrySelect.innerHTML += `<option value="${country}">${country}</option>`;
+            filterCountry.innerHTML += `<option value="${country}">${country}</option>`;
+          }
+
+          // Populate Category
+          const catSelect = document.getElementById('research-category');
+          catSelect.innerHTML = '';
+          data.categories.forEach(c => {
+            catSelect.innerHTML += `<option value="${c}">${c}</option>`;
+          });
+
+          // Populate Filter Status
+          const filterStatus = document.getElementById('filter-status');
+          filterStatus.innerHTML = '<option value="">All Statuses</option>';
+          statusList.forEach(st => {
+            filterStatus.innerHTML += `<option value="${st}">${st}</option>`;
+          });
+
+          onCountryChange();
+        }
+
+        // Fetch Knowledge Categories
+        const catRes = await fetch('/api/knowledge/categories');
+        const catData = await catRes.json();
+        if (catData.success) {
+          categoriesList = catData.categories;
+          const kFilter = document.getElementById('knowledge-category-filter');
+          const kModalCat = document.getElementById('item-category');
+          const uModalCat = document.getElementById('upload-category');
+
+          kFilter.innerHTML = '<option value="All">All 14 Categories</option>';
+          kModalCat.innerHTML = '';
+          uModalCat.innerHTML = '';
+
+          // Pills Bar
+          const pillsBar = document.getElementById('category-pills-bar');
+          pillsBar.innerHTML = `<button onclick="filterCategoryPill('All')" class="category-pill px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-purple-600 text-white shadow-xs">All</button>`;
+
+          categoriesList.forEach(c => {
+            kFilter.innerHTML += `<option value="${c}">${c}</option>`;
+            kModalCat.innerHTML += `<option value="${c}">${c}</option>`;
+            uModalCat.innerHTML += `<option value="${c}">${c}</option>`;
+            pillsBar.innerHTML += `<button onclick="filterCategoryPill('${c}')" class="category-pill px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100">${c}</button>`;
+          });
+        }
+      } catch (e) {
+        console.error('Failed to load initial data:', e);
+      }
+    }
+
+    function onCountryChange() {
+      const country = document.getElementById('research-country').value;
+      const stateSelect = document.getElementById('research-state');
+      stateSelect.innerHTML = '';
+
+      if (country === 'India') {
+        const states = locationData['India'] || {};
+        for (const state of Object.keys(states)) {
+          stateSelect.innerHTML += `<option value="${state}">${state}</option>`;
+        }
       } else {
-        document.getElementById('tab-research').classList.add('hidden');
-        document.getElementById('tab-leads').classList.remove('hidden');
-        document.getElementById('tab-research-btn').className = "px-4 py-2 text-xs font-semibold rounded-lg text-blue-200 hover:text-white";
-        document.getElementById('tab-leads-btn').className = "px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow";
-        loadLeads(1);
+        stateSelect.innerHTML = `<option value="">General / All Cities</option>`;
+      }
+      onStateChange();
+    }
+
+    function onStateChange() {
+      const country = document.getElementById('research-country').value;
+      const state = document.getElementById('research-state').value;
+      const citySelect = document.getElementById('research-city');
+      citySelect.innerHTML = '';
+
+      if (country === 'India') {
+        const cities = (locationData['India'] && locationData['India'][state]) || [];
+        cities.forEach(city => {
+          citySelect.innerHTML += `<option value="${city}">${city}</option>`;
+        });
+      } else {
+        const cities = locationData[country] || [];
+        cities.forEach(city => {
+          citySelect.innerHTML += `<option value="${city}">${city}</option>`;
+        });
       }
     }
 
     async function loadStats() {
       try {
         const res = await fetch('/api/stats');
-        const d = await res.json();
-        document.getElementById('stat-total').innerText = d.totalLeads.toLocaleString();
-        document.getElementById('stat-qualified').innerText = d.qualifiedLeads.toLocaleString();
-        document.getElementById('stat-whatsapp').innerText = d.withWhatsApp.toLocaleString();
-        document.getElementById('stat-email').innerText = d.withEmail.toLocaleString();
-        document.getElementById('stat-countries').innerText = d.countriesCount.toLocaleString();
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    async function loadLocations() {
-      try {
-        const res = await fetch('/api/locations');
         const data = await res.json();
-        locationData = data.locations;
-        categoryList = data.categories;
-        statusList = data.statuses;
-
-        // Populate Country dropdowns
-        const countrySel = document.getElementById('sel-country');
-        const fltCountry = document.getElementById('flt-country');
-        countrySel.innerHTML = '';
-        fltCountry.innerHTML = '<option value="">All Countries</option>';
-
-        Object.keys(locationData).forEach(c => {
-          countrySel.innerHTML += `<option value="${c}">${c}</option>`;
-          fltCountry.innerHTML += `<option value="${c}">${c}</option>`;
-        });
-
-        // Populate Categories
-        const catSel = document.getElementById('sel-category');
-        catSel.innerHTML = '';
-        categoryList.forEach(cat => {
-          catSel.innerHTML += `<option value="${cat}">${cat}</option>`;
-        });
-
-        // Populate Status filter
-        const statSel = document.getElementById('flt-status');
-        statSel.innerHTML = '<option value="">All Statuses</option>';
-        statusList.forEach(s => {
-          statSel.innerHTML += `<option value="${s}">${s}</option>`;
-        });
-
-        onCountryChange();
+        if (data.success && data.stats) {
+          const s = data.stats;
+          document.getElementById('stat-total').innerText = s.totalLeads.toLocaleString();
+          document.getElementById('stat-qualified').innerText = s.qualifiedLeads.toLocaleString();
+          document.getElementById('stat-whatsapp').innerText = s.withWhatsApp.toLocaleString();
+          document.getElementById('stat-email').innerText = s.withEmail.toLocaleString();
+        }
       } catch (e) {
         console.error(e);
       }
     }
 
-    function onCountryChange() {
-      const c = document.getElementById('sel-country').value;
-      const states = locationData[c] || {};
-      const stateSel = document.getElementById('sel-state');
-      stateSel.innerHTML = '<option value="">All States / Direct City</option>';
+    async function loadJobs() {
+      try {
+        const res = await fetch('/api/research/jobs');
+        const data = await res.json();
+        if (data.success && data.jobs) {
+          const tbody = document.getElementById('jobs-table-body');
+          tbody.innerHTML = '';
+          if (data.jobs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6 text-slate-400">No research tasks launched yet.</td></tr>';
+            return;
+          }
+          data.jobs.forEach(j => {
+            let badge = 'bg-slate-100 text-slate-700';
+            if (j.status === 'completed') badge = 'bg-emerald-100 text-emerald-800';
+            if (j.status === 'running') badge = 'bg-blue-100 text-blue-800 animate-pulse';
+            if (j.status === 'paused') badge = 'bg-amber-100 text-amber-800';
+            if (j.status === 'stopped' || j.status === 'failed') badge = 'bg-rose-100 text-rose-800';
 
-      Object.keys(states).forEach(s => {
-        stateSel.innerHTML += `<option value="${s}">${s}</option>`;
-      });
-
-      onStateChange();
-    }
-
-    function onStateChange() {
-      const c = document.getElementById('sel-country').value;
-      const s = document.getElementById('sel-state').value;
-      const cityInput = document.getElementById('sel-city');
-
-      if (s && locationData[c] && locationData[c][s] && locationData[c][s].length > 0) {
-        cityInput.value = locationData[c][s][0];
-      } else if (c === 'India') {
-        cityInput.value = 'Indore';
-      } else if (c === 'UAE') {
-        cityInput.value = 'Dubai';
-      } else if (c === 'USA') {
-        cityInput.value = 'New York City';
+            tbody.innerHTML += `
+              <tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="px-4 py-2.5 font-bold text-slate-800">${j.jobName || 'Gym Research'}</td>
+                <td class="px-4 py-2.5">${j.targetCity}, ${j.targetCountry}</td>
+                <td class="px-4 py-2.5">${j.targetCategory || 'Fitness'}</td>
+                <td class="px-4 py-2.5 text-center font-bold text-slate-800">${j.discoveredCount}</td>
+                <td class="px-4 py-2.5 text-center font-bold text-emerald-600">${j.qualifiedCount}</td>
+                <td class="px-4 py-2.5 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${badge}">${j.status}</span></td>
+                <td class="px-4 py-2.5 text-slate-400 text-[11px]">${j.createdAt ? j.createdAt.split(' ')[0] : '-'}</td>
+              </tr>
+            `;
+          });
+        }
+      } catch (e) {
+        console.error(e);
       }
     }
 
-    // Research Action Trigger
     async function startResearch() {
-      const country = document.getElementById('sel-country').value;
-      const state = document.getElementById('sel-state').value;
-      const city = document.getElementById('sel-city').value.trim();
-      const category = document.getElementById('sel-category').value;
-      const limit = document.getElementById('sel-limit').value;
+      const country = document.getElementById('research-country').value;
+      const state = document.getElementById('research-state').value;
+      const city = document.getElementById('research-city').value;
+      const category = document.getElementById('research-category').value;
+      const limit = parseInt(document.getElementById('research-limit').value || 10, 10);
 
-      if (!city) {
-        alert('Please enter a target city!');
+      if (!city || !country) {
+        alert('Please select Country and City.');
         return;
       }
 
-      document.getElementById('btn-start').disabled = true;
-      document.getElementById('btn-pause').disabled = false;
-      document.getElementById('btn-stop').disabled = false;
-
-      document.getElementById('progress-container').classList.remove('hidden');
-      document.getElementById('live-job-status').innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-500 mr-2 animate-ping"></span> Researching in ${city}, ${country}...`;
+      setJobControlButtons('running');
+      document.getElementById('progress-label').textContent = 'Initializing Discovery...';
+      document.getElementById('progress-bar').style.width = '10%';
 
       try {
         const res = await fetch('/api/research/start', {
@@ -462,34 +782,36 @@
           body: JSON.stringify({ country, state, city, category, limit })
         });
         const data = await res.json();
-        if (data.job) {
+        if (data.success && data.job) {
           activeJobId = data.job.jobId;
-          startPollingJob(activeJobId);
+          startPolling(activeJobId);
         }
       } catch (e) {
-        alert('Failed to start research: ' + e.message);
-        resetJobUI();
+        alert('Error starting research: ' + e.message);
+        setJobControlButtons('idle');
       }
     }
 
-    function startPollingJob(jobId) {
+    function startPolling(jobId) {
       if (pollInterval) clearInterval(pollInterval);
       pollInterval = setInterval(async () => {
         try {
-          const res = await fetch(`/api/research/status/${jobId}`);
-          const job = await res.json();
+          const res = await fetch('/api/research/status/' + jobId);
+          const data = await res.json();
+          if (data.success && data.job) {
+            const j = data.job;
+            const pct = j.currentProgress || 0;
+            document.getElementById('progress-bar').style.width = pct + '%';
+            document.getElementById('progress-percent').textContent = pct + '%';
+            document.getElementById('progress-label').textContent = `Discovered: ${j.discoveredCount} | Qualified: ${j.qualifiedCount} (${j.status})`;
 
-          const pct = job.currentProgress || 0;
-          document.getElementById('progress-bar').style.width = pct + '%';
-          document.getElementById('progress-pct').innerText = pct + '%';
-          document.getElementById('progress-text').innerText = `Discovered: ${job.discoveredCount} | Qualified: ${job.qualifiedCount}`;
-
-          if (job.status === 'completed' || job.status === 'stopped' || job.status === 'failed') {
-            clearInterval(pollInterval);
-            resetJobUI();
-            document.getElementById('live-job-status').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 mr-2"></span> Completed: ${job.discoveredCount} leads saved!`;
-            await loadStats();
-            await loadJobHistory();
+            if (j.status === 'completed' || j.status === 'stopped' || j.status === 'failed') {
+              clearInterval(pollInterval);
+              setJobControlButtons(j.status);
+              loadStats();
+              loadJobs();
+              loadLeads(1);
+            }
           }
         } catch (e) {
           console.error(e);
@@ -497,96 +819,48 @@
       }, 1500);
     }
 
-    async function pauseCurrentJob() {
+    async function pauseResearch() {
       if (!activeJobId) return;
-      await fetch(`/api/research/pause/${activeJobId}`, { method: 'POST' });
-      document.getElementById('btn-pause').disabled = true;
-      document.getElementById('btn-resume').disabled = false;
-      document.getElementById('live-job-status').innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 mr-2"></span> Research Paused`;
+      await fetch('/api/research/pause', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: activeJobId }) });
+      setJobControlButtons('paused');
     }
 
-    async function resumeCurrentJob() {
+    async function resumeResearch() {
       if (!activeJobId) return;
-      await fetch(`/api/research/resume/${activeJobId}`, { method: 'POST' });
-      document.getElementById('btn-pause').disabled = false;
-      document.getElementById('btn-resume').disabled = true;
-      document.getElementById('live-job-status').innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-500 mr-2 animate-pulse"></span> Research Resumed`;
+      await fetch('/api/research/resume', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: activeJobId }) });
+      setJobControlButtons('running');
     }
 
-    async function stopCurrentJob() {
+    async function stopResearch() {
       if (!activeJobId) return;
-      await fetch(`/api/research/stop/${activeJobId}`, { method: 'POST' });
-      resetJobUI();
-      document.getElementById('live-job-status').innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500 mr-2"></span> Research Stopped`;
-      await loadJobHistory();
-      await loadStats();
+      await fetch('/api/research/stop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: activeJobId }) });
+      setJobControlButtons('stopped');
+      if (pollInterval) clearInterval(pollInterval);
+      loadJobs();
+      loadStats();
     }
 
-    function resetJobUI() {
-      document.getElementById('btn-start').disabled = false;
-      document.getElementById('btn-pause').disabled = true;
-      document.getElementById('btn-resume').disabled = true;
-      document.getElementById('btn-stop').disabled = true;
+    function setJobControlButtons(status) {
+      document.getElementById('btn-start').classList.toggle('hidden', status === 'running' || status === 'paused');
+      document.getElementById('btn-pause').classList.toggle('hidden', status !== 'running');
+      document.getElementById('btn-resume').classList.toggle('hidden', status !== 'paused');
+      document.getElementById('btn-stop').classList.toggle('hidden', status !== 'running' && status !== 'paused');
     }
 
-    async function loadJobHistory() {
-      try {
-        const res = await fetch('/api/research/jobs');
-        const jobs = await res.json();
-        const tbody = document.getElementById('jobs-table-body');
-        tbody.innerHTML = '';
-
-        jobs.forEach(j => {
-          let badgeColor = 'bg-slate-100 text-slate-700';
-          if (j.status === 'completed') badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-          else if (j.status === 'running') badgeColor = 'bg-blue-50 text-blue-700 border-blue-200 animate-pulse';
-          else if (j.status === 'paused') badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
-          else if (j.status === 'failed') badgeColor = 'bg-red-50 text-red-700 border-red-200';
-
-          tbody.innerHTML += `
-            <tr class="hover:bg-slate-50/80 transition-colors">
-              <td class="px-6 py-3 font-mono text-slate-500">#${j.id}</td>
-              <td class="px-6 py-3 font-semibold text-slate-900">${j.jobName || 'Custom Research'}</td>
-              <td class="px-6 py-3 text-center">${j.searchLimit}</td>
-              <td class="px-6 py-3 text-center text-blue-600 font-bold">${j.discoveredCount}</td>
-              <td class="px-6 py-3 text-center text-emerald-600 font-bold">${j.qualifiedCount}</td>
-              <td class="px-6 py-3 text-center">
-                <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border ${badgeColor}">${j.status}</span>
-              </td>
-              <td class="px-6 py-3 text-right text-slate-500 font-mono text-[11px]">${j.startedAt ? j.startedAt.split(' ')[0] : '-'}</td>
-            </tr>
-          `;
-        });
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    function debounceLeadsLoad() {
+    let debounceTimer;
+    function debounceFilterLeads() {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => loadLeads(1), 300);
     }
 
     async function loadLeads(page = 1) {
-      const search = document.getElementById('flt-search').value;
-      const country = document.getElementById('flt-country').value;
-      const status = document.getElementById('flt-status').value;
-      const minScore = document.getElementById('flt-score').value;
-      const hasWhatsApp = document.getElementById('flt-has-whatsapp').checked;
-      const hasEmail = document.getElementById('flt-has-email').checked;
+      const search = document.getElementById('lead-search')?.value || '';
+      const country = document.getElementById('filter-country')?.value || '';
+      const status = document.getElementById('filter-status')?.value || '';
+      const hasWhatsApp = document.getElementById('filter-whatsapp')?.checked ? 1 : '';
+      const hasEmail = document.getElementById('filter-email')?.checked ? 1 : '';
 
-      const params = new URLSearchParams({
-        page,
-        limit: 25,
-        search,
-        country,
-        status,
-        minScore,
-        hasWhatsApp,
-        hasEmail
-      });
-
-      // Update export links to preserve current filters
+      const params = new URLSearchParams({ page, limit: 25, search, country, status, hasWhatsApp, hasEmail });
       document.getElementById('btn-export-csv').href = `/api/leads/export/csv?${params.toString()}`;
       document.getElementById('btn-export-json').href = `/api/leads/export/json?${params.toString()}`;
 
@@ -613,28 +887,28 @@
             (l.businessPhone ? `<span class="text-slate-600">${l.businessPhone}</span>` : `<span class="text-slate-300">-</span>`);
 
           const emailItem = l.businessEmail ? 
-            `<a href="mailto:${l.businessEmail}" class="text-blue-600 hover:underline truncate max-w-[140px] block">${l.businessEmail}</a>` : 
+            `<a href="mailto:${l.businessEmail}" class="text-blue-600 hover:underline truncate max-w-[130px] block">${l.businessEmail}</a>` : 
             `<span class="text-slate-300">-</span>`;
 
           const websiteItem = l.website ? 
-            `<a href="${l.website.startsWith('http') ? l.website : 'https://' + l.website}" target="_blank" class="text-slate-500 hover:text-slate-700 text-[11px] block truncate max-w-[140px]"><i class="fa-solid fa-arrow-up-right-from-square mr-1 text-[10px]"></i>Website</a>` : '';
+            `<a href="${l.website.startsWith('http') ? l.website : 'https://' + l.website}" target="_blank" class="text-slate-500 hover:text-slate-700 text-[11px] block truncate max-w-[130px]"><i class="fa-solid fa-arrow-up-right-from-square mr-1 text-[10px]"></i>Website</a>` : '';
 
           tbody.innerHTML += `
             <tr class="hover:bg-slate-50/80 transition-colors">
-              <td class="px-5 py-3">
+              <td class="px-4 py-2.5">
                 <div class="font-bold text-slate-900">${l.gymName}</div>
                 <div class="text-[11px] text-slate-400 truncate max-w-[200px]">${l.fullAddress || ''}</div>
               </td>
-              <td class="px-4 py-3"><span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[11px]">${l.gymCategory}</span></td>
-              <td class="px-4 py-3">
+              <td class="px-3 py-2.5"><span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[11px]">${l.gymCategory}</span></td>
+              <td class="px-3 py-2.5">
                 <div class="font-semibold text-slate-800">${l.city}</div>
                 <div class="text-[11px] text-slate-400">${l.country}</div>
               </td>
-              <td class="px-4 py-3">${waBtn}</td>
-              <td class="px-4 py-3">${emailItem}${websiteItem}</td>
-              <td class="px-4 py-3 text-slate-700">${l.ownerName || l.founderName || '<span class="text-slate-300">-</span>'}</td>
-              <td class="px-4 py-3 text-center"><span class="px-2 py-0.5 rounded-full font-bold text-xs ${scoreBadge}">${l.leadScore}</span></td>
-              <td class="px-4 py-3">
+              <td class="px-3 py-2.5">${waBtn}</td>
+              <td class="px-3 py-2.5">${emailItem}${websiteItem}</td>
+              <td class="px-3 py-2.5 text-slate-700">${l.ownerName || l.founderName || '<span class="text-slate-300">-</span>'}</td>
+              <td class="px-3 py-2.5 text-center"><span class="px-2 py-0.5 rounded-full font-bold text-xs ${scoreBadge}">${l.leadScore}</span></td>
+              <td class="px-3 py-2.5">
                 <select onchange="updateLeadStatus(${l.id}, this.value)" class="text-[11px] font-semibold rounded border-slate-300 bg-slate-50 p-1 focus:ring-blue-500 focus:border-blue-500">
                   ${statusList.map(st => `<option value="${st}" ${st === l.status ? 'selected' : ''}>${st}</option>`).join('')}
                 </select>
@@ -643,7 +917,6 @@
           `;
         });
 
-        // Setup Pagination
         const pag = document.getElementById('pagination-controls');
         pag.innerHTML = `
           <button onclick="loadLeads(${page - 1})" ${page <= 1 ? 'disabled' : ''} class="px-2.5 py-1 text-xs border border-slate-200 rounded disabled:opacity-30">Prev</button>
@@ -665,6 +938,453 @@
         await loadStats();
       } catch (e) {
         alert('Failed to update status: ' + e.message);
+      }
+    }
+
+    // ========================================================
+    // KNOWLEDGE BASE FUNCTIONS & HANDLERS
+    // ========================================================
+
+    async function loadKnowledgeStats() {
+      try {
+        const res = await fetch('/api/knowledge/stats');
+        const data = await res.json();
+        if (data.success && data.stats) {
+          const s = data.stats;
+          document.getElementById('stat-knowledge-items').innerText = s.totalItems.toLocaleString();
+          document.getElementById('stat-knowledge-cats').innerText = `${s.categoriesCount} / 14`;
+          document.getElementById('knowledge-count-badge').innerText = s.totalItems.toLocaleString();
+          outreachApprovedState = s.outreachApproved;
+          renderOutreachBanner(s.outreachApproved);
+        }
+      } catch (e) {
+        console.error('Failed to load knowledge stats:', e);
+      }
+    }
+
+    function renderOutreachBanner(isApproved) {
+      const box = document.getElementById('outreach-alert-box');
+      const icon = document.getElementById('outreach-icon');
+      const title = document.getElementById('outreach-title');
+      const desc = document.getElementById('outreach-desc');
+      const btn = document.getElementById('outreach-toggle-btn');
+
+      if (isApproved) {
+        box.className = 'p-3.5 rounded-xl border bg-emerald-50 border-emerald-200 text-emerald-900 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 transition-all';
+        icon.className = 'w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-sm font-bold';
+        icon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+        title.className = 'text-xs font-bold uppercase tracking-wider text-emerald-800';
+        title.innerText = 'Product Knowledge Verified & Approved for Outreach';
+        desc.className = 'text-xs text-emerald-700 mt-0.5';
+        desc.innerText = 'The AI agent is authorized to answer gym prospect questions using confirmed GymStack product details.';
+        btn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center shadow-xs bg-white hover:bg-slate-50 text-slate-700 border border-slate-300';
+        btn.innerHTML = '<i class="fa-solid fa-pause mr-1.5 text-amber-600"></i> Place Outreach on Hold';
+      } else {
+        box.className = 'p-3.5 rounded-xl border bg-amber-50 border-amber-300 text-amber-950 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 transition-all';
+        icon.className = 'w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center text-sm font-bold';
+        icon.innerHTML = '<i class="fa-solid fa-shield-halved"></i>';
+        title.className = 'text-xs font-bold uppercase tracking-wider text-amber-900';
+        title.innerText = 'Outreach Guardrail: Administrator Review Required';
+        desc.className = 'text-xs text-amber-800 mt-0.5';
+        desc.innerText = 'Automated marketing outreach is paused until you confirm that all 14 product categories and pricing details are accurate.';
+        btn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white';
+        btn.innerHTML = '<i class="fa-solid fa-check mr-1.5"></i> Confirm & Authorize Outreach';
+      }
+    }
+
+    async function toggleOutreachApproval() {
+      const nextState = !outreachApprovedState;
+      if (nextState && !confirm('Have you reviewed the product features, demo links, and pricing in the knowledge base and confirm they are accurate?')) {
+        return;
+      }
+      try {
+        const res = await fetch('/api/knowledge/approval', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ approved: nextState })
+        });
+        const data = await res.json();
+        if (data.success) {
+          outreachApprovedState = data.outreachApproved;
+          renderOutreachBanner(outreachApprovedState);
+        }
+      } catch (e) {
+        alert('Failed to update outreach status: ' + e.message);
+      }
+    }
+
+    function filterCategoryPill(category) {
+      document.getElementById('knowledge-category-filter').value = category;
+      const pills = document.querySelectorAll('.category-pill');
+      pills.forEach(p => {
+        if (p.innerText === category) {
+          p.className = 'category-pill px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-purple-600 text-white shadow-xs';
+        } else {
+          p.className = 'category-pill px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100';
+        }
+      });
+      loadKnowledgeItems();
+    }
+
+    let knowledgeDebounce;
+    function debounceFilterKnowledge() {
+      clearTimeout(knowledgeDebounce);
+      knowledgeDebounce = setTimeout(() => loadKnowledgeItems(), 300);
+    }
+
+    async function loadKnowledgeItems() {
+      const search = document.getElementById('knowledge-search')?.value || '';
+      const category = document.getElementById('knowledge-category-filter')?.value || 'All';
+
+      const params = new URLSearchParams({ search, category: category === 'All' ? '' : category, limit: 100 });
+      try {
+        const res = await fetch(`/api/knowledge/items?${params.toString()}`);
+        const data = await res.json();
+        const grid = document.getElementById('knowledge-items-grid');
+        grid.innerHTML = '';
+
+        if (!data.items || data.items.length === 0) {
+          grid.innerHTML = '<div class="col-span-full py-12 text-center text-slate-400">No knowledge items match your search. Click \'Add Feature\' to create one!</div>';
+          return;
+        }
+
+        data.items.forEach(it => {
+          let sourceBadge = 'bg-slate-100 text-slate-700';
+          if (it.sourceType === 'faq') sourceBadge = 'bg-blue-100 text-blue-800';
+          if (it.sourceType === 'pricing') sourceBadge = 'bg-emerald-100 text-emerald-800';
+          if (it.sourceType === 'document') sourceBadge = 'bg-amber-100 text-amber-800';
+
+          grid.innerHTML += `
+            <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between hover:border-purple-300 transition-all">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">${it.category}</span>
+                  <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded ${sourceBadge}">${it.sourceType}</span>
+                </div>
+                <h4 class="text-xs font-bold text-slate-900 leading-snug">${it.title}</h4>
+                <p class="text-xs text-slate-600 line-clamp-4 leading-relaxed">${it.content}</p>
+              </div>
+
+              <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                <div class="flex items-center space-x-1.5 text-slate-400">
+                  <span class="inline-flex items-center text-emerald-600 font-semibold"><i class="fa-solid fa-circle-check text-xs mr-1"></i> Verified</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <button onclick="editKnowledgeItem(${it.id})" class="text-blue-600 hover:text-blue-800 p-1.5 rounded hover:bg-blue-50 font-semibold" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
+                  <button onclick="deleteKnowledgeItem(${it.id})" class="text-rose-600 hover:text-rose-800 p-1.5 rounded hover:bg-rose-50 font-semibold" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function openKnowledgeModal() {
+      document.getElementById('item-id').value = '';
+      document.getElementById('item-title').value = '';
+      document.getElementById('item-content').value = '';
+      document.getElementById('item-tags').value = '';
+      document.getElementById('item-source-type').value = 'manual';
+      document.getElementById('item-verified').checked = true;
+      document.getElementById('knowledge-modal-title').innerText = 'Add Product Knowledge Item';
+      document.getElementById('knowledge-modal').classList.remove('hidden');
+    }
+
+    function closeKnowledgeModal() {
+      document.getElementById('knowledge-modal').classList.add('hidden');
+    }
+
+    async function editKnowledgeItem(id) {
+      try {
+        const res = await fetch(`/api/knowledge/items/${id}`);
+        const data = await res.json();
+        if (data.success && data.item) {
+          const it = data.item;
+          document.getElementById('item-id').value = it.id;
+          document.getElementById('item-category').value = it.category;
+          document.getElementById('item-title').value = it.title;
+          document.getElementById('item-content').value = it.content;
+          document.getElementById('item-tags').value = it.tags || '';
+          document.getElementById('item-source-type').value = it.sourceType || 'manual';
+          document.getElementById('item-verified').checked = it.isVerified === 1;
+          document.getElementById('knowledge-modal-title').innerText = 'Edit Product Knowledge Item';
+          document.getElementById('knowledge-modal').classList.remove('hidden');
+        }
+      } catch (e) {
+        alert('Failed to load item: ' + e.message);
+      }
+    }
+
+    async function saveKnowledgeItem() {
+      const id = document.getElementById('item-id').value;
+      const category = document.getElementById('item-category').value;
+      const title = document.getElementById('item-title').value.trim();
+      const content = document.getElementById('item-content').value.trim();
+      const tags = document.getElementById('item-tags').value.trim();
+      const sourceType = document.getElementById('item-source-type').value;
+      const isVerified = document.getElementById('item-verified').checked ? 1 : 0;
+
+      if (!title || !content) {
+        alert('Please fill in both Title and Details.');
+        return;
+      }
+
+      const payload = { category, title, content, tags, sourceType, isVerified };
+      try {
+        const url = id ? `/api/knowledge/items/${id}` : '/api/knowledge/items';
+        const method = id ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeKnowledgeModal();
+          await loadKnowledgeStats();
+          await loadKnowledgeItems();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (e) {
+        alert('Error saving knowledge item: ' + e.message);
+      }
+    }
+
+    async function deleteKnowledgeItem(id) {
+      if (!confirm('Are you sure you want to delete this knowledge item?')) return;
+      try {
+        const res = await fetch(`/api/knowledge/items/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          await loadKnowledgeStats();
+          await loadKnowledgeItems();
+        }
+      } catch (e) {
+        alert('Failed to delete item: ' + e.message);
+      }
+    }
+
+    // Documents & Uploads
+    async function loadDocuments() {
+      try {
+        const res = await fetch('/api/knowledge/documents');
+        const data = await res.json();
+        if (data.success && data.documents) {
+          const tbody = document.getElementById('documents-table-body');
+          tbody.innerHTML = '';
+          if (data.documents.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6 text-slate-400">No documents uploaded yet. Click \'Upload Docs\' to add PDF brochures and manuals!</td></tr>';
+            return;
+          }
+          data.documents.forEach(d => {
+            const kb = Math.round(d.fileSize / 1024);
+            tbody.innerHTML += `
+              <tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="px-4 py-2.5 font-bold text-slate-800">${d.originalName}</td>
+                <td class="px-4 py-2.5"><span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-bold uppercase">${d.fileType}</span></td>
+                <td class="px-4 py-2.5">${d.category}</td>
+                <td class="px-4 py-2.5 text-slate-500">${kb} KB</td>
+                <td class="px-4 py-2.5"><span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase">${d.status}</span></td>
+                <td class="px-4 py-2.5 text-slate-400 text-[11px]">${d.createdAt ? d.createdAt.split(' ')[0] : '-'}</td>
+                <td class="px-4 py-2.5 text-right">
+                  <a href="/uploads/knowledge/${d.fileName}" target="_blank" class="text-blue-600 hover:text-blue-800 font-semibold text-xs">
+                    <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> View
+                  </a>
+                </td>
+              </tr>
+            `;
+          });
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function openUploadModal() {
+      document.getElementById('upload-file-input').value = '';
+      document.getElementById('upload-title').value = '';
+      document.getElementById('upload-modal').classList.remove('hidden');
+    }
+
+    function closeUploadModal() {
+      document.getElementById('upload-modal').classList.add('hidden');
+    }
+
+    async function submitUpload() {
+      const fileInput = document.getElementById('upload-file-input');
+      const category = document.getElementById('upload-category').value;
+      const title = document.getElementById('upload-title').value.trim();
+
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert('Please select a file to upload.');
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', category);
+      formData.append('title', title);
+
+      const btn = document.getElementById('btn-submit-upload');
+      btn.disabled = true;
+      btn.innerText = 'Uploading & Indexing...';
+
+      try {
+        const res = await fetch('/api/knowledge/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeUploadModal();
+          await loadKnowledgeStats();
+          await loadKnowledgeItems();
+          await loadDocuments();
+          alert('Document successfully uploaded and indexed into GymStack Knowledge Base!');
+        } else {
+          alert('Upload failed: ' + data.error);
+        }
+      } catch (e) {
+        alert('Error uploading document: ' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Upload & Index';
+      }
+    }
+
+    async function reindexDocuments() {
+      if (!confirm('Re-index all uploaded documents and refresh extracted knowledge?')) return;
+      try {
+        const res = await fetch('/api/knowledge/reindex', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          alert(`Successfully re-indexed ${data.reindexedCount} documents!`);
+          await loadKnowledgeStats();
+          await loadKnowledgeItems();
+        }
+      } catch (e) {
+        alert('Re-index error: ' + e.message);
+      }
+    }
+
+    // Settings Modal
+    async function openSettingsModal() {
+      try {
+        const res = await fetch('/api/knowledge/settings');
+        const data = await res.json();
+        if (data.success && data.settings) {
+          const s = data.settings;
+          document.getElementById('setting-demo-link').value = s.demo_link || 'https://gymstack.in/register';
+          document.getElementById('setting-video-demo').value = s.video_demo_url || 'https://gymstack.in/demo-video';
+          document.getElementById('setting-support-phone').value = s.support_phone || '+91-8358826116';
+          document.getElementById('setting-trial-text').value = s.free_trial_text || '30-day free trial (no credit card required)';
+          document.getElementById('settings-modal').classList.remove('hidden');
+        }
+      } catch (e) {
+        alert('Failed to load settings: ' + e.message);
+      }
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settings-modal').classList.add('hidden');
+    }
+
+    async function saveSettings() {
+      const demoLink = document.getElementById('setting-demo-link').value.trim();
+      const videoDemo = document.getElementById('setting-video-demo').value.trim();
+      const phone = document.getElementById('setting-support-phone').value.trim();
+      const trial = document.getElementById('setting-trial-text').value.trim();
+
+      try {
+        await fetch('/api/knowledge/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'demo_link', value: demoLink }) });
+        await fetch('/api/knowledge/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'video_demo_url', value: videoDemo }) });
+        await fetch('/api/knowledge/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'support_phone', value: phone }) });
+        await fetch('/api/knowledge/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'free_trial_text', value: trial }) });
+        closeSettingsModal();
+        alert('Settings updated successfully!');
+      } catch (e) {
+        alert('Error saving settings: ' + e.message);
+      }
+    }
+
+    // AI RAG Simulator Modal
+    function openTestRagModal() {
+      document.getElementById('rag-test-input').value = '';
+      document.getElementById('rag-test-result').classList.add('hidden');
+      document.getElementById('rag-modal').classList.remove('hidden');
+    }
+
+    function closeTestRagModal() {
+      document.getElementById('rag-modal').classList.add('hidden');
+    }
+
+    async function runRagSimulation() {
+      const query = document.getElementById('rag-test-input').value.trim();
+      if (!query) {
+        alert('Please enter a question to test.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/knowledge/test-query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query })
+        });
+        const data = await res.json();
+        if (data.success && data.result) {
+          const r = data.result;
+          document.getElementById('rag-test-result').classList.remove('hidden');
+
+          const confCard = document.getElementById('rag-confidence-card');
+          const confText = document.getElementById('rag-confidence-text');
+          const scoreBadge = document.getElementById('rag-score-badge');
+
+          if (r.confidence === 'high') {
+            confCard.className = 'p-3 rounded-lg border bg-emerald-50 border-emerald-200 text-emerald-900 flex items-center justify-between';
+            confText.innerText = 'High Confidence - Direct Verified Match';
+            scoreBadge.className = 'px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-600 text-white';
+            scoreBadge.innerText = `Score: ${r.highestScore}`;
+          } else if (r.confidence === 'medium') {
+            confCard.className = 'p-3 rounded-lg border bg-blue-50 border-blue-200 text-blue-900 flex items-center justify-between';
+            confText.innerText = 'Medium Confidence - Related Capabilities Found';
+            scoreBadge.className = 'px-2.5 py-1 text-xs font-bold rounded-full bg-blue-600 text-white';
+            scoreBadge.innerText = `Score: ${r.highestScore}`;
+          } else {
+            confCard.className = 'p-3 rounded-lg border bg-rose-50 border-rose-200 text-rose-900 flex items-center justify-between';
+            confText.innerText = 'Unsupported or Unknown Feature - Escalates to Admin Protocol';
+            scoreBadge.className = 'px-2.5 py-1 text-xs font-bold rounded-full bg-rose-600 text-white';
+            scoreBadge.innerText = 'Escalate';
+          }
+
+          const matchedDiv = document.getElementById('rag-matched-items');
+          matchedDiv.innerHTML = '';
+          if (r.relevantItems && r.relevantItems.length > 0) {
+            r.relevantItems.forEach(it => {
+              matchedDiv.innerHTML += `
+                <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                  <div class="flex justify-between items-center text-[10px]">
+                    <span class="font-bold text-purple-700">${it.category}</span>
+                    <span class="text-slate-400 font-semibold">Match Score: ${it.matchScore || '-'}</span>
+                  </div>
+                  <h5 class="text-xs font-bold text-slate-800 mt-0.5">${it.title}</h5>
+                  <p class="text-[11px] text-slate-600 mt-1">${it.content}</p>
+                </div>
+              `;
+            });
+          } else {
+            matchedDiv.innerHTML = '<div class="text-xs text-rose-600 font-semibold">No verified knowledge items matched. The AI will avoid false claims and refer the customer to admin/support.</div>';
+          }
+
+          document.getElementById('rag-prompt-preview').innerText = r.formattedContext;
+        }
+      } catch (e) {
+        alert('RAG Simulation failed: ' + e.message);
       }
     }
   </script>

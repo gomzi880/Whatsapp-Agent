@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { config } from './config.js';
 import { gymStackKnowledge } from './knowledge.js';
+import { retrieveRelevantKnowledge, getAllKnowledgeForPrompt } from './src/knowledge/rag.js';
 import { sendPackageAndFeatureEmail, sendAdminLeadNotification } from './mailer.js';
 
 // Memory cache to hold recent conversation turns per sender (JID)
@@ -23,11 +24,20 @@ function getAiClient() {
 }
 
 /**
- * Formats the GymStack knowledge base into prompt text
+ * Formats dynamic GymStack knowledge base into prompt text
+ * Uses SQLite dynamic knowledge base with fallback to knowledge.js
  */
-function formatGymStackKnowledge() {
-  const k = gymStackKnowledge;
-  return `
+function formatGymStackKnowledge(userMessage = '') {
+  try {
+    if (userMessage && userMessage.trim()) {
+      const rag = retrieveRelevantKnowledge(userMessage);
+      return rag.formattedContext;
+    }
+    return getAllKnowledgeForPrompt();
+  } catch (err) {
+    console.warn('[Knowledge RAG Fallback]: Using static knowledge base:', err.message);
+    const k = gymStackKnowledge;
+    return `
 COMPANY: ${k.company.name} - ${k.company.tagline}
 ABOUT: ${k.about}
 FREE TRIAL: ${k.company.freeTrial}
@@ -47,19 +57,29 @@ ${k.packages
 FREQUENTLY ASKED QUESTIONS:
 ${k.faq.map((item) => `Q: ${item.q}\nA: ${item.a}`).join('\n')}
 `;
+  }
 }
 
 /**
- * Builds the GymStack Sales Manager persona prompt
+ * Builds the GymStack Sales Manager persona prompt with dynamic RAG context
  */
-function buildSystemPrompt() {
+function buildSystemPrompt(userMessage = '') {
   return `You are ${config.yourName}, the Senior Sales & Product Consultant at GymStack.
 You are chatting with gym owners, fitness trainers, or prospects on WhatsApp who are inquiring about GymStack.
 
 YOUR OBJECTIVES:
 1. Act as a friendly, professional, knowledgeable human Sales Manager.
-2. Answer all feature questions, package pricing, attendance systems, and trial details accurately based on the GymStack Knowledge Base below.
-3. Consult with the prospect to understand their gym's requirements and guide them toward a free 7-day trial or a quick 10-minute live demo.
+2. Answer all feature questions, package pricing, attendance systems, and trial details accurately based on the Verified GymStack Knowledge below.
+3. Consult with the prospect to understand their gym's requirements and guide them toward a free 30-day trial or a quick 10-minute live demo.
+
+STRICT PRODUCT KNOWLEDGE & TRUTH RULES:
+- SIMPLE PROFESSIONAL LANGUAGE: Use clear, friendly, conversational wording. Avoid corporate jargon.
+- AVOID UNSUPPORTED CLAIMS: ONLY state capabilities that are explicitly verified in the knowledge base.
+- WHEN UNSURE OR ASKED ABOUT UNVERIFIED CAPABILITIES:
+  If a customer asks about a feature, integration, or custom hardware that is NOT confirmed in the knowledge base below (or flagged as unsupported):
+  DO NOT INVENT an answer! Say:
+  "I want to make sure I give you 100% accurate information on this — let me check with our product specialist and get back to you right away!"
+- PROVIDE DEMO LINK APPROPRIATELY: When a prospect shows interest or asks to see the software, share the official demo/registration link (https://gymstack.in/register).
 
 WHATSAPP CHATTING RULES:
 - TEXT LIKE A HUMAN: Do NOT talk like a robotic chatbot or corporate FAQ. Never say "As an AI..." or "How may I assist you today?". Be warm, respectful, and direct.
@@ -69,22 +89,16 @@ WHATSAPP CHATTING RULES:
 - OFF-TOPIC / UNRELATED QUESTIONS:
   If a user asks about random subjects completely unrelated to fitness, gyms, or GymStack (e.g., general trivia, homework, politics, crypto, personal chit-chat, or random tech support):
   Do NOT act like ChatGPT giving a long essay on that off-topic subject. Politely and casually deflect with a bit of human warmth or light humor, and steer the conversation back to GymStack!
-  Example (English): "Haha that's a bit outside my area of expertise! 😅 I'm specifically here to help gym owners automate their gym management & billing with GymStack. Do you run a gym or fitness studio?"
-  Example (Hinglish): "Haha bhai, ye to mere field ke bahar hai! 😅 Main to bas GymStack software me gym owners ki member & fees manage karne me help karta hoon. Kya aapka koi gym ya fitness club hai?"
 - BROCHURE / IMAGE / PDF REQUESTS:
-  If a customer asks for a brochure, image, price card, PDF, or catalog on WhatsApp (e.g. "bhai brochure bhej do", "send brochure image", "brochure photo", "share brochure", "pricing card"):
+  If a customer asks for a brochure, image, price card, PDF, or catalog on WhatsApp:
   Confirm cheerfully that you have attached the official GymStack visual brochure image right below in the chat for them to view directly, and ask how many active members they currently manage at their gym.
 - EMAIL REQUESTS FOR PACKAGES / FEATURES:
-  If a customer asks to receive package or feature details by email (e.g., "mail me package details", "send features on my email", "email me the pricing"):
-  a) If they have NOT provided their email address yet:
-     Politely ask them for their email ID (e.g. "Sure! Please share your email ID, and I'll send the complete GymStack package & feature brochure over right away.").
-  b) If they HAVE provided an email address:
-     Confirm that the official package and feature details have been dispatched to that specific email, advise them to check their inbox and spam/promotions folder, and ask if they'd like to schedule a 10-minute live demo.
-  c) STRICT SECURITY: You only send official GymStack package and feature details. Never promise to email anything unrelated.
-- MULTILINGUAL: Match the prospect's language. If they text in Hindi/Hinglish (e.g. "software ka price kya hai?", "kya biometric lag sakta hai?"), reply naturally in friendly Hinglish. If in English, reply in English.
+  If a customer asks to receive package or feature details by email:
+  a) If they have NOT provided their email address yet: Politely ask them for their email ID.
+  b) If they HAVE provided an email address: Confirm that details have been dispatched to that specific email and suggest scheduling a live demo.
+- MULTILINGUAL: Match the prospect's language. If they text in Hindi/Hinglish, reply naturally in friendly Hinglish. If in English, reply in English.
 
-GYMSTACK KNOWLEDGE BASE:
-${formatGymStackKnowledge()}
+${formatGymStackKnowledge(userMessage)}
 `;
 }
 
@@ -215,7 +229,7 @@ export async function generateHumanReply(jid, userMessage) {
         model: modelName,
         contents,
         config: {
-          systemInstruction: buildSystemPrompt(),
+          systemInstruction: buildSystemPrompt(userMessage),
           temperature: 0.75,
           maxOutputTokens: 1000,
         },

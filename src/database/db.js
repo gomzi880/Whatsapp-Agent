@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import { INITIAL_SETTINGS, INITIAL_KNOWLEDGE_ITEMS } from '../knowledge/seedData.js';
 
 const DB_PATH = path.resolve('./gymstack.db');
 const db = new Database(DB_PATH);
@@ -83,6 +84,41 @@ db.exec(`
     lastRunAt TEXT,
     nextRunAt TEXT,
     createdAt TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS knowledge_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category TEXT NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    sourceType TEXT DEFAULT 'manual',
+    sourceDocumentId INTEGER,
+    tags TEXT,
+    isVerified INTEGER DEFAULT 1,
+    sortOrder INTEGER DEFAULT 0,
+    createdAt TEXT DEFAULT (datetime('now')),
+    updatedAt TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_knowledge_category ON knowledge_items(category);
+  CREATE INDEX IF NOT EXISTS idx_knowledge_title ON knowledge_items(title);
+
+  CREATE TABLE IF NOT EXISTS knowledge_documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    originalName TEXT NOT NULL,
+    fileName TEXT NOT NULL,
+    fileType TEXT NOT NULL,
+    fileSize INTEGER,
+    category TEXT DEFAULT 'General',
+    extractedText TEXT,
+    status TEXT DEFAULT 'indexed',
+    itemCount INTEGER DEFAULT 0,
+    createdAt TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS knowledge_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
   );
 `);
 
@@ -380,5 +416,215 @@ export function getLeadStats() {
     countryBreakdown
   };
 }
+
+/**
+ * =========================================================================
+ * PRODUCT KNOWLEDGE BASE REPOSITORY & METHODS
+ * =========================================================================
+ */
+
+/**
+ * Automatically seeds the database with verified GymStack knowledge on first startup
+ */
+export function seedKnowledgeBaseIfEmpty() {
+  const existingCount = db.prepare('SELECT COUNT(*) as count FROM knowledge_items').get().count;
+  if (existingCount === 0) {
+    console.log('🌱 Seeding GymStack Product Knowledge Base into SQLite...');
+
+    // Seed Settings
+    const insertSetting = db.prepare('INSERT OR REPLACE INTO knowledge_settings (key, value) VALUES (?, ?)');
+    for (const setting of INITIAL_SETTINGS) {
+      insertSetting.run(setting.key, setting.value);
+    }
+
+    // Seed Knowledge Items
+    const insertItem = db.prepare(`
+      INSERT INTO knowledge_items (category, title, content, sourceType, tags, isVerified, sortOrder)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const insertMany = db.transaction((items) => {
+      for (const item of items) {
+        insertItem.run(
+          item.category,
+          item.title,
+          item.content,
+          item.sourceType || 'manual',
+          item.tags || '',
+          item.isVerified ?? 1,
+          item.sortOrder || 0
+        );
+      }
+    });
+
+    insertMany(INITIAL_KNOWLEDGE_ITEMS);
+    console.log(`✅ Successfully seeded ${INITIAL_KNOWLEDGE_ITEMS.length} product knowledge items across all 14 categories.`);
+  }
+}
+
+/**
+ * Fetch knowledge items with optional category and search filters
+ */
+export function getKnowledgeItems({ category, search, verifiedOnly = false, limit = 100, offset = 0 } = {}) {
+  let whereClauses = [];
+  let params = [];
+
+  if (category && category !== 'All') {
+    whereClauses.push('category = ?');
+    params.push(category);
+  }
+
+  if (verifiedOnly) {
+    whereClauses.push('isVerified = 1');
+  }
+
+  if (search && search.trim()) {
+    const term = `%${search.trim().toLowerCase()}%`;
+    whereClauses.push('(LOWER(title) LIKE ? OR LOWER(content) LIKE ? OR LOWER(tags) LIKE ?)');
+    params.push(term, term, term);
+  }
+
+  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+  const total = db.prepare(`SELECT COUNT(*) as count FROM knowledge_items ${whereSql}`).get(...params).count;
+
+  const rows = db.prepare(`
+    SELECT * FROM knowledge_items
+    ${whereSql}
+    ORDER BY sortOrder ASC, id DESC
+    LIMIT ? OFFSET ?
+  `).all(...params, limit, offset);
+
+  return { total, items: rows };
+}
+
+/**
+ * Get a single knowledge item by ID
+ */
+export function getKnowledgeItemById(id) {
+  return db.prepare('SELECT * FROM knowledge_items WHERE id = ?').get(id);
+}
+
+/**
+ * Create a new knowledge item
+ */
+export function createKnowledgeItem({ category, title, content, sourceType = 'manual', tags = '', isVerified = 1, sortOrder = 0, sourceDocumentId = null }) {
+  const info = db.prepare(`
+    INSERT INTO knowledge_items (category, title, content, sourceType, tags, isVerified, sortOrder, sourceDocumentId)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(category, title, content, sourceType, tags, isVerified, sortOrder, sourceDocumentId);
+
+  return db.prepare('SELECT * FROM knowledge_items WHERE id = ?').get(info.lastInsertRowid);
+}
+
+/**
+ * Update an existing knowledge item
+ */
+export function updateKnowledgeItem(id, { category, title, content, sourceType, tags, isVerified, sortOrder }) {
+  const existing = getKnowledgeItemById(id);
+  if (!existing) return null;
+
+  db.prepare(`
+    UPDATE knowledge_items
+    SET category = ?,
+        title = ?,
+        content = ?,
+        sourceType = ?,
+        tags = ?,
+        isVerified = ?,
+        sortOrder = ?,
+        updatedAt = datetime('now')
+    WHERE id = ?
+  `).run(
+    category ?? existing.category,
+    title ?? existing.title,
+    content ?? existing.content,
+    sourceType ?? existing.sourceType,
+    tags ?? existing.tags,
+    isVerified ?? existing.isVerified,
+    sortOrder ?? existing.sortOrder,
+    id
+  );
+
+  return getKnowledgeItemById(id);
+}
+
+/**
+ * Delete a knowledge item
+ */
+export function deleteKnowledgeItem(id) {
+  const res = db.prepare('DELETE FROM knowledge_items WHERE id = ?').run(id);
+  return res.changes > 0;
+}
+
+/**
+ * Fetch all knowledge settings as a key-value object
+ */
+export function getKnowledgeSettings() {
+  const rows = db.prepare('SELECT * FROM knowledge_settings').all();
+  const settings = {};
+  for (const r of rows) {
+    settings[r.key] = r.value;
+  }
+  return settings;
+}
+
+/**
+ * Update a knowledge setting key
+ */
+export function updateKnowledgeSetting(key, value) {
+  db.prepare('INSERT OR REPLACE INTO knowledge_settings (key, value) VALUES (?, ?)').run(key, String(value));
+  return true;
+}
+
+/**
+ * Save an uploaded knowledge document
+ */
+export function saveKnowledgeDocument({ originalName, fileName, fileType, fileSize, category = 'General', extractedText = '', status = 'indexed', itemCount = 0 }) {
+  const info = db.prepare(`
+    INSERT INTO knowledge_documents (originalName, fileName, fileType, fileSize, category, extractedText, status, itemCount)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(originalName, fileName, fileType, fileSize, category, extractedText, status, itemCount);
+
+  return db.prepare('SELECT * FROM knowledge_documents WHERE id = ?').get(info.lastInsertRowid);
+}
+
+/**
+ * Get all uploaded knowledge documents
+ */
+export function getKnowledgeDocuments() {
+  return db.prepare('SELECT * FROM knowledge_documents ORDER BY id DESC').all();
+}
+
+/**
+ * Aggregate knowledge base metrics
+ */
+export function getKnowledgeStats() {
+  const totalItems = db.prepare('SELECT COUNT(*) as count FROM knowledge_items').get().count;
+  const verifiedItems = db.prepare('SELECT COUNT(*) as count FROM knowledge_items WHERE isVerified = 1').get().count;
+  const documentsCount = db.prepare('SELECT COUNT(*) as count FROM knowledge_documents').get().count;
+  const categoriesCount = db.prepare('SELECT COUNT(DISTINCT category) as count FROM knowledge_items').get().count;
+  const outreachSetting = db.prepare("SELECT value FROM knowledge_settings WHERE key = 'outreach_approved'").get();
+  const outreachApproved = outreachSetting ? outreachSetting.value === '1' : false;
+
+  const categoryBreakdown = db.prepare(`
+    SELECT category, COUNT(*) as count 
+    FROM knowledge_items 
+    GROUP BY category 
+    ORDER BY count DESC
+  `).all();
+
+  return {
+    totalItems,
+    verifiedItems,
+    documentsCount,
+    categoriesCount,
+    outreachApproved,
+    categoryBreakdown
+  };
+}
+
+// Automatically seed on initialization if empty
+seedKnowledgeBaseIfEmpty();
 
 export default db;
