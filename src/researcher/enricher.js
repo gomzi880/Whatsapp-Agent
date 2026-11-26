@@ -36,7 +36,7 @@ export async function enrichFromWebsite(websiteUrl) {
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+    const timeout = setTimeout(() => controller.abort(), 3000); // 3 second timeout
 
     const res = await fetch(targetUrl, {
       headers: {

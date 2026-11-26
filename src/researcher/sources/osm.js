@@ -47,7 +47,7 @@ export async function searchGymsFromOSM({ country = 'India', state = '', city = 
   for (const endpoint of endpoints) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
 
       const resp = await fetch(endpoint, {
         method: 'POST',
@@ -117,6 +117,47 @@ export async function searchGymsFromOSM({ country = 'India', state = '', city = 
       }
     } catch (err) {
       console.warn('[OSM Nominatim Fallback Warning]:', err.message);
+    }
+  }
+
+  // Complement with Photon OpenStreetMap Search Engine for deep locality coverage
+  if (rawElements.length < limit) {
+    try {
+      const photonQueries = [
+        `gym ${queryCity}`,
+        `fitness centre ${queryCity}`,
+        `fitness ${queryCity} ${queryCountry}`
+      ];
+      for (const pq of photonQueries) {
+        if (rawElements.length >= limit) break;
+        const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(pq)}&limit=30`;
+        const resp = await fetch(photonUrl);
+        if (resp.ok) {
+          const data = await resp.json();
+          for (const f of data.features || []) {
+            const p = f.properties || {};
+            const name = p.name;
+            if (name && (p.city?.toLowerCase() === queryCity.toLowerCase() || p.state?.toLowerCase() === state.toLowerCase() || !p.city)) {
+              rawElements.push({
+                tags: {
+                  name,
+                  'addr:city': p.city || queryCity,
+                  'addr:state': p.state || state,
+                  'addr:country': p.country || queryCountry,
+                  'addr:street': p.street || '',
+                  phone: '',
+                  website: ''
+                },
+                lat: f.geometry?.coordinates?.[1],
+                lon: f.geometry?.coordinates?.[0],
+                display_name: `${name}, ${p.street || ''}, ${queryCity}`
+              });
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[Photon Engine Warning]:', err.message);
     }
   }
 

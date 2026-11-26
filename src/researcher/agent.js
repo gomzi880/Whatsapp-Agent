@@ -7,6 +7,7 @@
 import db, { saveOrUpdateLead } from '../database/db.js';
 import { searchGymsFromOSM } from './sources/osm.js';
 import { searchGymsFromGoogle } from './sources/google.js';
+import { searchGymsFromAIDeepResearch } from './sources/deepResearch.js';
 import { enrichFromWebsite, determineConfidenceLevel } from './enricher.js';
 
 // In-memory map of running jobs to control pause/resume/stop signals
@@ -68,27 +69,56 @@ async function executeResearchJob(jobId, { country, state, city, category, limit
   const controller = activeJobControllers.get(jobId);
   if (!controller) return;
 
-  // 1. Fetch raw candidate gyms from Google Places (if configured) and OpenStreetMap
+  // 1. Fetch candidate gyms across multi-engine sources:
+  // - AI Deep Web Intelligence (Gemini high-coverage search)
+  // - Google Places API (if configured in .env)
+  // - OpenStreetMap + Photon Deep Locality Engines
   let candidates = [];
+  const seenCandidateNames = new Set();
 
+  function addCandidates(list) {
+    if (!Array.isArray(list)) return;
+    for (const item of list) {
+      if (!item || !item.gymName) continue;
+      const cleanName = item.gymName.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (cleanName && !seenCandidateNames.has(cleanName)) {
+        seenCandidateNames.add(cleanName);
+        candidates.push(item);
+      }
+    }
+  }
+
+  // Engine A: AI Deep Web Intelligence (Gemini Grounded Gym Research)
+  try {
+    const aiResults = await searchGymsFromAIDeepResearch({ city, state, country, category, limit });
+    addCandidates(aiResults);
+    console.log(`🤖 [Research Job #${jobId}] AI Deep Research yielded ${aiResults.length} initial gyms.`);
+  } catch (e) {
+    console.warn('[AI Deep Research Provider Note]:', e.message);
+  }
+
+  // Engine B: Google Places API (if configured)
   try {
     const googleResults = await searchGymsFromGoogle({ city, state, country, category, limit });
-    if (googleResults && googleResults.length > 0) {
-      candidates.push(...googleResults);
-    }
+    addCandidates(googleResults);
   } catch (e) {
     console.warn('[Google Search Provider Note]:', e.message);
   }
 
-  // Complement with OpenStreetMap authorized directory
-  const remainingNeeded = Math.max(limit - candidates.length, 10);
-  const osmResults = await searchGymsFromOSM({ city, state, country, category, limit: remainingNeeded });
-  candidates.push(...osmResults);
+  // Engine C: OpenStreetMap + Photon Global Directory
+  try {
+    const remainingNeeded = Math.max(limit - candidates.length, 15);
+    const osmResults = await searchGymsFromOSM({ city, state, country, category, limit: remainingNeeded });
+    addCandidates(osmResults);
+    console.log(`🗺️ [Research Job #${jobId}] OSM & Directory engines contributed ${osmResults.length} gyms.`);
+  } catch (e) {
+    console.warn('[OSM Search Provider Note]:', e.message);
+  }
 
-  // Limit to user requested limit
+  // Limit to target limit requested by user
   candidates = candidates.slice(0, limit);
 
-  console.log(`📍 [Research Job #${jobId}] Discovered ${candidates.length} candidate businesses. Enriching data...`);
+  console.log(`📍 [Research Job #${jobId}] Multi-engine discovery complete. Total distinct candidates: ${candidates.length}. Enriching and storing...`);
 
   let discoveredCount = 0;
   let qualifiedCount = 0;
