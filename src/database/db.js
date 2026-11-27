@@ -86,6 +86,57 @@ db.exec(`
     createdAt TEXT DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS daily_research_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    researchDate TEXT NOT NULL,
+    targetQuota INTEGER DEFAULT 10,
+    acceptedCount INTEGER DEFAULT 0,
+    duplicateCount INTEGER DEFAULT 0,
+    invalidCount INTEGER DEFAULT 0,
+    selectedLocations TEXT,
+    status TEXT DEFAULT 'in_progress',
+    startedAt TEXT,
+    completedAt TEXT,
+    createdAt TEXT DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_daily_res_date ON daily_research_logs(researchDate);
+
+  CREATE TABLE IF NOT EXISTS research_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    country TEXT NOT NULL,
+    state TEXT,
+    city TEXT NOT NULL,
+    category TEXT DEFAULT 'Fitness Centre',
+    researchDate TEXT NOT NULL,
+    discoveredCount INTEGER DEFAULT 0,
+    acceptedCount INTEGER DEFAULT 0,
+    createdAt TEXT DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_research_hist_loc ON research_history(country, state, city);
+  CREATE INDEX IF NOT EXISTS idx_research_hist_date ON research_history(researchDate);
+
+  CREATE TABLE IF NOT EXISTS free_trial_subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    leadId INTEGER NOT NULL,
+    gymName TEXT NOT NULL,
+    contactPhone TEXT,
+    contactEmail TEXT,
+    trialStartDate TEXT NOT NULL,
+    trialEndDate TEXT NOT NULL,
+    status TEXT DEFAULT 'Active',
+    onboardingStatus TEXT DEFAULT 'Pending',
+    featuresUsed TEXT,
+    lastActivityAt TEXT,
+    convertedToPaidAt TEXT,
+    planTier TEXT,
+    notes TEXT,
+    createdAt TEXT DEFAULT (datetime('now')),
+    updatedAt TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY(leadId) REFERENCES leads(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_trial_leadId ON free_trial_subscriptions(leadId);
+  CREATE INDEX IF NOT EXISTS idx_trial_status ON free_trial_subscriptions(status);
+
   CREATE TABLE IF NOT EXISTS knowledge_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     category TEXT NOT NULL,
@@ -353,6 +404,44 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_sessions_token ON login_sessions(token);
   CREATE INDEX IF NOT EXISTS idx_sessions_userId ON login_sessions(userId);
   CREATE INDEX IF NOT EXISTS idx_sessions_expiresAt ON login_sessions(expiresAt);
+
+  CREATE TABLE IF NOT EXISTS research_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    country TEXT NOT NULL,
+    state TEXT,
+    city TEXT NOT NULL,
+    category TEXT DEFAULT 'Fitness Centre',
+    researchDate TEXT NOT NULL,
+    discoveredCount INTEGER DEFAULT 0,
+    acceptedCount INTEGER DEFAULT 0,
+    createdAt TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_research_history_loc ON research_history(country, state, city);
+  CREATE INDEX IF NOT EXISTS idx_research_history_date ON research_history(researchDate);
+
+  CREATE TABLE IF NOT EXISTS free_trial_subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    leadId INTEGER NOT NULL,
+    gymName TEXT NOT NULL,
+    contactPhone TEXT,
+    contactEmail TEXT,
+    trialStartDate TEXT NOT NULL,
+    trialEndDate TEXT NOT NULL,
+    status TEXT DEFAULT 'Active',
+    onboardingStatus TEXT DEFAULT 'Pending',
+    featuresUsed TEXT DEFAULT '[]',
+    lastActivityAt TEXT,
+    convertedToPaidAt TEXT,
+    planTier TEXT DEFAULT 'Standard',
+    notes TEXT,
+    createdAt TEXT DEFAULT (datetime('now')),
+    updatedAt TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY(leadId) REFERENCES leads(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_trial_leadId ON free_trial_subscriptions(leadId);
+  CREATE INDEX IF NOT EXISTS idx_trial_status ON free_trial_subscriptions(status);
 `);
 
 /**
@@ -2309,6 +2398,101 @@ export function updateAdminSettings(newSettings, performedBy = 'administrator') 
   return merged;
 }
 
+// Research History & Location Exploration Helpers
+export function recordResearchHistory({ country, state = '', city, category = 'Fitness Centre', researchDate = null, discoveredCount = 0, acceptedCount = 0 }) {
+  const dateStr = researchDate || new Date().toISOString().split('T')[0];
+  const stmt = db.prepare(`
+    INSERT INTO research_history (country, state, city, category, researchDate, discoveredCount, acceptedCount)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+  const res = stmt.run(country, state || '', city, category, dateStr, discoveredCount, acceptedCount);
+  return { id: res.lastInsertRowid, country, state, city, category, researchDate: dateStr, discoveredCount, acceptedCount };
+}
+
+export function getResearchHistory(limit = 100) {
+  return db.prepare('SELECT * FROM research_history ORDER BY id DESC LIMIT ?').all(limit);
+}
+
+export function getExploredLocations() {
+  return db.prepare(`
+    SELECT country, state, city, category, COUNT(*) as searchCount, MAX(researchDate) as lastResearchedDate, SUM(acceptedCount) as totalAccepted
+    FROM research_history
+    GROUP BY country, state, city, category
+  `).all();
+}
+
+export function getTodaysNewLeadsCount(dateStr = null) {
+  const today = dateStr || new Date().toISOString().split('T')[0];
+  const row = db.prepare("SELECT COUNT(*) as count FROM leads WHERE date(createdAt) = date(?)").get(today);
+  return row ? row.count : 0;
+}
+
+// Free Trial Subscriptions Helpers (Phase 6)
+export function createFreeTrialSubscription({ leadId, gymName, contactPhone, contactEmail, trialDurationDays = 30, planTier = 'Standard', notes = '' }) {
+  const startDate = new Date();
+  const endDate = new Date(startDate.getTime() + trialDurationDays * 24 * 60 * 60 * 1000);
+  const startStr = startDate.toISOString().split('T')[0];
+  const endStr = endDate.toISOString().split('T')[0];
+
+  const stmt = db.prepare(`
+    INSERT INTO free_trial_subscriptions (
+      leadId, gymName, contactPhone, contactEmail, trialStartDate, trialEndDate,
+      status, onboardingStatus, featuresUsed, planTier, notes
+    ) VALUES (?, ?, ?, ?, ?, ?, 'Active', 'Pending', '[]', ?, ?)
+  `);
+
+  const res = stmt.run(leadId, gymName, contactPhone || null, contactEmail || null, startStr, endStr, planTier, notes || '');
+  
+  // Advance lead status to 'Interested' or 'Converted' as appropriate
+  updateLeadStatus(leadId, 'Interested', `Enrolled in ${trialDurationDays}-day free trial (Expires: ${endStr})`);
+
+  logAuditAction({
+    agentName: 'Trial Tracker Agent',
+    actionType: 'ENROLL_FREE_TRIAL',
+    targetEntity: 'leads',
+    targetId: leadId,
+    details: { subscriptionId: res.lastInsertRowid, gymName, trialStartDate: startStr, trialEndDate: endStr }
+  });
+
+  return {
+    id: res.lastInsertRowid,
+    leadId,
+    gymName,
+    trialStartDate: startStr,
+    trialEndDate: endStr,
+    status: 'Active'
+  };
+}
+
+export function getFreeTrialSubscriptions(filter = {}) {
+  let query = 'SELECT * FROM free_trial_subscriptions WHERE 1=1';
+  const params = [];
+  if (filter.status) {
+    query += ' AND status = ?';
+    params.push(filter.status);
+  }
+  if (filter.leadId) {
+    query += ' AND leadId = ?';
+    params.push(filter.leadId);
+  }
+  query += ' ORDER BY id DESC';
+  return db.prepare(query).all(...params);
+}
+
+export function updateFreeTrialSubscription(id, updates = {}) {
+  const fields = [];
+  const params = [];
+  for (const [key, val] of Object.entries(updates)) {
+    fields.push(`${key} = ?`);
+    params.push(typeof val === 'object' ? JSON.stringify(val) : val);
+  }
+  if (fields.length === 0) return null;
+  fields.push("updatedAt = datetime('now')");
+  params.push(id);
+  db.prepare(`UPDATE free_trial_subscriptions SET ${fields.join(', ')} WHERE id = ?`).run(...params);
+  return db.prepare('SELECT * FROM free_trial_subscriptions WHERE id = ?').get(id);
+}
+
 // Attach helper methods to default db object for convenience
 Object.assign(db, {
   recordFeedback,
@@ -2341,7 +2525,14 @@ Object.assign(db, {
   getExecutiveDashboardStats,
   getSalesAnalyticsData,
   getAdminSettings,
-  updateAdminSettings
+  updateAdminSettings,
+  recordResearchHistory,
+  getResearchHistory,
+  getExploredLocations,
+  getTodaysNewLeadsCount,
+  createFreeTrialSubscription,
+  getFreeTrialSubscriptions,
+  updateFreeTrialSubscription
 });
 
 // Automatically seed on initialization if empty

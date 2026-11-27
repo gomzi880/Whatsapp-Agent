@@ -4,7 +4,12 @@
  * and persistent storage into SQLite.
  */
 
-import db, { saveOrUpdateLead } from '../database/db.js';
+import db, {
+  saveOrUpdateLead,
+  recordResearchHistory,
+  logAuditAction,
+  updateAgentMonitoring
+} from '../database/db.js';
 import { searchGymsFromOSM } from './sources/osm.js';
 import { searchGymsFromGoogle } from './sources/google.js';
 import { searchGymsFromAIDeepResearch } from './sources/deepResearch.js';
@@ -122,6 +127,8 @@ async function executeResearchJob(jobId, { country, state, city, category, limit
 
   let discoveredCount = 0;
   let qualifiedCount = 0;
+  let newLeadsCount = 0;
+  let duplicateCount = 0;
 
   for (let i = 0; i < candidates.length; i++) {
     // Check pause or stop signal
@@ -129,7 +136,7 @@ async function executeResearchJob(jobId, { country, state, city, category, limit
       console.log(`⏹️ [Research Job #${jobId}] Stopped by user.`);
       db.prepare("UPDATE research_jobs SET status = 'stopped', completedAt = datetime('now') WHERE id = ?").run(jobId);
       activeJobControllers.delete(jobId);
-      return;
+      return { jobId, discoveredCount, qualifiedCount, newLeadsCount, duplicateCount, status: 'stopped' };
     }
 
     while (controller.status === 'paused') {
@@ -138,7 +145,7 @@ async function executeResearchJob(jobId, { country, state, city, category, limit
       if (controller.status === 'stopped') {
         db.prepare("UPDATE research_jobs SET status = 'stopped', completedAt = datetime('now') WHERE id = ?").run(jobId);
         activeJobControllers.delete(jobId);
-        return;
+        return { jobId, discoveredCount, qualifiedCount, newLeadsCount, duplicateCount, status: 'stopped' };
       }
     }
 
@@ -172,6 +179,12 @@ async function executeResearchJob(jobId, { country, state, city, category, limit
     const saved = saveOrUpdateLead(fullLead);
     discoveredCount++;
 
+    if (saved.isNew) {
+      newLeadsCount++;
+    } else {
+      duplicateCount++;
+    }
+
     if (saved.score >= 60 || fullLead.businessEmail || fullLead.businessPhone) {
       qualifiedCount++;
     }
@@ -191,6 +204,16 @@ async function executeResearchJob(jobId, { country, state, city, category, limit
     await new Promise((r) => setTimeout(r, 600));
   }
 
+  // Record historical research tracking
+  recordResearchHistory({
+    country,
+    state: state || '',
+    city,
+    category,
+    discoveredCount,
+    acceptedCount: newLeadsCount
+  });
+
   // Mark job completed
   db.prepare(`
     UPDATE research_jobs SET
@@ -200,8 +223,61 @@ async function executeResearchJob(jobId, { country, state, city, category, limit
     WHERE id = ?
   `).run(jobId);
 
+  logAuditAction({
+    agentName: 'Research Agent',
+    actionType: 'RESEARCH_JOB_COMPLETED',
+    targetEntity: 'research_jobs',
+    targetId: jobId,
+    details: { country, state, city, category, discoveredCount, qualifiedCount, newLeadsCount, duplicateCount }
+  });
+
+  updateAgentMonitoring('research_agent', {
+    runningStatus: 'Active',
+    currentTask: `Finished research in ${city}, ${country} (${newLeadsCount} new leads accepted)`,
+    lastExecution: new Date().toISOString()
+  });
+
   activeJobControllers.delete(jobId);
-  console.log(`✅ [Research Job #${jobId}] Completed! Discovered: ${discoveredCount}, Qualified: ${qualifiedCount}`);
+  console.log(`✅ [Research Job #${jobId}] Completed! Discovered: ${discoveredCount}, Qualified: ${qualifiedCount}, New Unique Leads: ${newLeadsCount}, Duplicates Merged: ${duplicateCount}`);
+
+  return { jobId, discoveredCount, qualifiedCount, newLeadsCount, duplicateCount, status: 'completed' };
+}
+
+/**
+ * Synchronous executor wrapper for research jobs (for schedulers)
+ */
+export async function executeResearchSync({
+  country = 'India',
+  state = '',
+  city = 'Indore',
+  category = 'Fitness Centre',
+  limit = 30
+}) {
+  const insertJob = db.prepare(`
+    INSERT INTO research_jobs (
+      jobName, targetCountry, targetState, targetCity, targetCategory, searchLimit,
+      status, discoveredCount, qualifiedCount, currentProgress, startedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, 'running', 0, 0, 0, datetime('now'))
+  `);
+
+  const jobName = `${category} in ${city}, ${country}`;
+  const res = insertJob.run(jobName, country, state || '', city, category, limit);
+  const jobId = res.lastInsertRowid;
+
+  const controller = { jobId, status: 'running' };
+  activeJobControllers.set(jobId, controller);
+
+  try {
+    return await executeResearchJob(jobId, { country, state, city, category, limit });
+  } catch (err) {
+    console.error(`[Research Job #${jobId} Error]:`, err.message);
+    db.prepare("UPDATE research_jobs SET status = 'failed', errorMessage = ? WHERE id = ?").run(
+      err.message,
+      jobId
+    );
+    activeJobControllers.delete(jobId);
+    throw err;
+  }
 }
 
 /**
