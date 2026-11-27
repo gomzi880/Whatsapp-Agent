@@ -75,7 +75,7 @@ export function detectProspectIntent(text) {
 
   // 3. Pricing & package inquiry
   if (
-    /price|pricing|cost|charge|fees|rate|kitna|pack|starter|gold|diamond/i.test(clean)
+    /price|pricing|cost|charge|fees|rate|kitna|pack|starter|gold|diamond|expensive|budget|afford/i.test(clean)
   ) {
     return 'pricing';
   }

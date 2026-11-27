@@ -1005,11 +1005,20 @@ export function updateLeadStatus(leadId, status, notes = null) {
 /**
  * Record a message sent or received
  */
-export function recordLeadMessage({ leadId = null, campaignId = null, remoteJid, senderRole, messageText, status = 'sent', intent = null, errorMessage = null }) {
+export function recordLeadMessage({ leadId = null, campaignId = null, remoteJid, senderRole, messageText, status = 'sent', intent = null, errorMessage = null } = {}) {
   const info = db.prepare(`
     INSERT INTO lead_messages (leadId, campaignId, remoteJid, senderRole, messageText, status, intent, errorMessage)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(leadId, campaignId, remoteJid, senderRole, messageText, status, intent, errorMessage);
+  `).run(
+    leadId || null,
+    campaignId || null,
+    remoteJid || '',
+    senderRole || 'system',
+    messageText || '',
+    status || 'sent',
+    intent || null,
+    errorMessage || null
+  );
 
   return db.prepare('SELECT * FROM lead_messages WHERE id = ?').get(info.lastInsertRowid);
 }
