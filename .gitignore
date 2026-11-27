@@ -8,5 +8,7 @@ gymstack.db*
 *.db
 uploads/knowledge/*
 !uploads/knowledge/.gitkeep
+bin/
+*.exe
 .DS_Store
 
