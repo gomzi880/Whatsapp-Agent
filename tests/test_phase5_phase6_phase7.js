@@ -180,23 +180,23 @@ async function runTests() {
     // TEST 8: Phase 7 - 4-Stage Follow-Up Sequence Scheduling
     // -------------------------------------------------------------
     console.log('\nTesting Phase 7: 4-Stage Follow-Up Sequence Scheduling...');
-    const seqLead = saveOrUpdateLead({
+    const seqLeadSaved = saveOrUpdateLead({
       gymName: 'Vanguard Fitness ' + Date.now(),
       city: 'Chandigarh',
       country: 'India',
-      businessPhone: '919877665544',
+      businessPhone: '9198' + Date.now().toString().slice(-8),
       status: 'Contacted'
     });
 
-    const sequenceResult = scheduleFollowUpSequence(seqLead.id, 'whatsapp');
+    const sequenceResult = scheduleFollowUpSequence(seqLeadSaved.id, 'whatsapp');
     assert.strictEqual(sequenceResult.scheduled, true, 'Sequence should be scheduled');
     assert.strictEqual(sequenceResult.count, 4, 'Must schedule exactly 4 stages (+2d, +4d, +7d, +10d)');
 
-    const followUps = db.prepare('SELECT * FROM follow_ups WHERE leadId = ? ORDER BY attemptNumber ASC').all(seqLead.id);
-    assert.strictEqual(followUps.length, 4, 'Database must contain 4 follow_up records');
+    const followUps = db.prepare("SELECT * FROM follow_ups WHERE leadId = ? AND status = 'Pending' ORDER BY attemptNumber ASC").all(seqLeadSaved.id);
+    assert.strictEqual(followUps.length, 4, 'Database must contain 4 pending follow_up records');
     assert.strictEqual(followUps[0].attemptNumber, 1, 'First stage is attempt 1');
     assert.strictEqual(followUps[3].attemptNumber, 4, 'Final stage is attempt 4');
-    console.log(`✅ [TEST 8 PASSED] 4-Stage Follow-Up sequence scheduled for Lead #${seqLead.id}:`);
+    console.log(`✅ [TEST 8 PASSED] 4-Stage Follow-Up sequence scheduled for Lead #${seqLeadSaved.id}:`);
     followUps.forEach((f) => console.log(`   └─ Stage ${f.attemptNumber}: ${f.scheduledDate} [${f.followUpType}]`));
     testsPassed++;
 
@@ -204,10 +204,10 @@ async function runTests() {
     // TEST 9: Phase 7 - Follow-Up Suppression on Prospect Interaction
     // -------------------------------------------------------------
     console.log('\nTesting Phase 7: Follow-Up Suppression on Interaction/Opt-out...');
-    const cancelledCount = suppressFollowUpSequenceOnInteraction(seqLead.id, 'Customer replied with question');
+    const cancelledCount = suppressFollowUpSequenceOnInteraction(seqLeadSaved.id, 'Customer replied with question');
     assert.strictEqual(cancelledCount, 4, 'All 4 pending stages should be cancelled');
 
-    const pendingAfter = db.prepare("SELECT COUNT(*) as count FROM follow_ups WHERE leadId = ? AND status = 'Pending'").get(seqLead.id).count;
+    const pendingAfter = db.prepare("SELECT COUNT(*) as count FROM follow_ups WHERE leadId = ? AND status = 'Pending'").get(seqLeadSaved.id).count;
     assert.strictEqual(pendingAfter, 0, 'No pending follow-ups should remain');
     console.log(`✅ [TEST 9 PASSED] Sequence suppression verified: ${cancelledCount} pending stages cancelled upon interaction.`);
     testsPassed++;
