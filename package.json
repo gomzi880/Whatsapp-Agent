@@ -5,7 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
+    "start": "node start-all.js",
+    "bot": "node index.js",
     "dashboard": "node src/dashboard/server.js",
     "create-admin": "node scripts/setup-admin.js",
     "all": "node start-all.js"

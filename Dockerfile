@@ -9,7 +9,9 @@ RUN npm install --omit=dev
 # Copy project files
 COPY . .
 
-# Persistent session storage
-VOLUME ["/app/auth_info_baileys"]
+# Persistent session and database storage
+VOLUME ["/app/auth_info_baileys", "/app/backups"]
+
+EXPOSE 3000
 
 CMD ["npm", "start"]
