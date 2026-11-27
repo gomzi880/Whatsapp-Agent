@@ -20,6 +20,7 @@ import db, {
   getOutreachCampaignById,
   getOutreachStats,
   getLeadMessages,
+  resolvePhoneNumber,
   getEligibleLeadsForOutreach,
   getEmailCampaigns,
   getEmailCampaignById,
@@ -255,8 +256,9 @@ const upload = multer({
 
 app.use('/uploads', express.static(path.resolve('./uploads')));
 
-// Serve Static Dashboard
+// Serve Static Dashboard with no-cache headers to ensure newest UI
 app.get('/', (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
@@ -741,7 +743,10 @@ app.post('/api/outreach/test', async (req, res) => {
 app.get('/api/outreach/messages', (req, res) => {
   try {
     const { leadId, campaignId, remoteJid, role, intent, order = 'desc', latestOnly, limit = 50, offset = 0 } = req.query;
-    const isLatestOnly = latestOnly === 'true' || latestOnly === '1';
+    
+    // Default to latest message per unique contact unless raw logs or specific role/intent are requested
+    const isLatestOnly = !(latestOnly === 'false' || latestOnly === '0' || remoteJid || role || intent);
+
     const result = getLeadMessages({
       leadId: leadId ? parseInt(leadId, 10) : null,
       campaignId: campaignId ? parseInt(campaignId, 10) : null,
@@ -753,6 +758,18 @@ app.get('/api/outreach/messages', (req, res) => {
       limit: parseInt(limit, 10),
       offset: parseInt(offset, 10)
     });
+
+    // Attach resolved real phone numbers (mapping Baileys multi-device LID to real phone numbers)
+    if (result.messages && result.messages.length > 0) {
+      result.messages = result.messages.map(m => {
+        const resolved = resolvePhoneNumber(m.remoteJid);
+        return {
+          ...m,
+          resolvedPhone: resolved || (m.remoteJid ? m.remoteJid.replace(/[^0-9]/g, '') : '')
+        };
+      });
+    }
+
     res.json({ success: true, ...result });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

@@ -961,21 +961,76 @@ export function getKnowledgeStats() {
  */
 
 /**
+ * Resolves a WhatsApp JID or phone to its true phone number (e.g. resolving @lid via Baileys reverse map)
+ */
+export function resolvePhoneNumber(jidOrPhone) {
+  if (!jidOrPhone) return '';
+  const clean = String(jidOrPhone).trim();
+  const digits = clean.replace(/[^0-9]/g, '');
+
+  if (clean.includes('@lid') || digits.length > 13) {
+    const lidPath = path.resolve(`./auth_info_baileys/lid-mapping-${digits}_reverse.json`);
+    if (fs.existsSync(lidPath)) {
+      try {
+        const mapped = JSON.parse(fs.readFileSync(lidPath, 'utf8'));
+        if (mapped) return String(mapped).replace(/[^0-9]/g, '');
+      } catch (e) {}
+    }
+  }
+  return digits;
+}
+
+/**
+ * Resolves a phone number or JID to its mapped LID if available
+ */
+export function resolveLidFromPhone(phoneOrJid) {
+  if (!phoneOrJid) return null;
+  const digits = String(phoneOrJid).replace(/[^0-9]/g, '');
+  const forwardPath = path.resolve(`./auth_info_baileys/lid-mapping-${digits}.json`);
+  if (fs.existsSync(forwardPath)) {
+    try {
+      const mapped = JSON.parse(fs.readFileSync(forwardPath, 'utf8'));
+      if (mapped) return String(mapped).replace(/[^0-9]/g, '');
+    } catch (e) {}
+  }
+  if (digits.length === 10) {
+    const forward91 = path.resolve(`./auth_info_baileys/lid-mapping-91${digits}.json`);
+    if (fs.existsSync(forward91)) {
+      try {
+        const mapped = JSON.parse(fs.readFileSync(forward91, 'utf8'));
+        if (mapped) return String(mapped).replace(/[^0-9]/g, '');
+      } catch (e) {}
+    }
+  }
+  return null;
+}
+
+/**
  * Find a lead in database by phone or WhatsApp JID
  */
 export function findLeadByPhoneOrJid(phoneOrJid) {
   if (!phoneOrJid) return null;
-  const digits = phoneOrJid.replace(/[^0-9]/g, '');
-  if (!digits || digits.length < 7) return null;
+  const clean = String(phoneOrJid).trim();
+  const digits = clean.replace(/[^0-9]/g, '');
+  const resolved = resolvePhoneNumber(clean);
 
   // 1. Direct match on normalized phone
   let lead = db.prepare('SELECT * FROM leads WHERE normalizedPhone = ?').get(digits);
   if (lead) return lead;
 
+  if (resolved && resolved !== digits) {
+    lead = db.prepare('SELECT * FROM leads WHERE normalizedPhone = ?').get(resolved);
+    if (lead) return lead;
+  }
+
   // 2. Suffix match (last 10 digits for India/international matching)
-  const last10 = digits.slice(-10);
-  lead = db.prepare('SELECT * FROM leads WHERE normalizedPhone LIKE ? OR whatsappNumber LIKE ?').get(`%${last10}`, `%${last10}`);
-  return lead || null;
+  const last10 = (resolved || digits).slice(-10);
+  if (last10 && last10.length >= 7) {
+    lead = db.prepare('SELECT * FROM leads WHERE normalizedPhone LIKE ? OR whatsappNumber LIKE ?').get(`%${last10}`, `%${last10}`);
+    if (lead) return lead;
+  }
+
+  return null;
 }
 
 /**
@@ -1039,14 +1094,27 @@ export function getLeadMessages({ leadId, campaignId, remoteJid, role, intent, o
     params.push(campaignId);
   }
   if (remoteJid) {
-    const digits = remoteJid.replace(/[^0-9]/g, '');
-    if (digits) {
-      whereClauses.push('(m.remoteJid = ? OR m.remoteJid LIKE ?)');
-      params.push(remoteJid, `%${digits}%`);
-    } else {
-      whereClauses.push('m.remoteJid = ?');
-      params.push(remoteJid);
+    const cleanJid = remoteJid.trim();
+    const digits = cleanJid.replace(/[^0-9]/g, '');
+    const mappedPhone = resolvePhoneNumber(cleanJid);
+    const mappedLid = resolveLidFromPhone(cleanJid);
+
+    const candidates = new Set([cleanJid, digits]);
+    if (mappedPhone) {
+      candidates.add(mappedPhone);
+      candidates.add(`${mappedPhone}@s.whatsapp.net`);
     }
+    if (mappedLid) {
+      candidates.add(mappedLid);
+      candidates.add(`${mappedLid}@lid`);
+    }
+
+    const orClauses = [];
+    for (const c of candidates) {
+      orClauses.push('(m.remoteJid = ? OR m.remoteJid LIKE ?)');
+      params.push(c, `%${c}%`);
+    }
+    whereClauses.push(`(${orClauses.join(' OR ')})`);
   }
   if (role) {
     whereClauses.push('m.senderRole = ?');
