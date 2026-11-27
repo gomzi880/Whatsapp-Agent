@@ -60,7 +60,7 @@
       </nav>
 
       <div class="flex items-center space-x-2 text-xs">
-        <span class="inline-flex items-center bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 px-2.5 py-1.5 rounded-lg font-medium">
+        <span id="global-wa-badge" class="inline-flex items-center bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 px-2.5 py-1.5 rounded-lg font-medium">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-1.5"></span> WhatsApp Connected
         </span>
         <button onclick="refreshCurrentTab()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg font-medium transition flex items-center">
@@ -2923,7 +2923,7 @@
           else if (l.leadScore >= 50) scoreBadge = 'bg-blue-100 text-blue-800';
 
           const waBtn = l.whatsappNumber ? 
-            `<a href="https://wa.me/${l.whatsappNumber.replace(/[^0-9]/g, '')}" target="_blank" class="inline-flex items-center text-green-600 hover:text-green-700 font-semibold"><i class="fa-brands fa-whatsapp mr-1 text-sm"></i>+${l.whatsappNumber}</a>` : 
+            `<a href="https://wa.me/${l.whatsappNumber.replace(/[^0-9]/g, '')}" target="_blank" class="inline-flex items-center text-green-600 hover:text-green-700 font-semibold"><i class="fa-brands fa-whatsapp mr-1 text-sm"></i>${l.whatsappNumber.startsWith('+') ? l.whatsappNumber : '+' + l.whatsappNumber}</a>` : 
             (l.businessPhone ? `<span class="text-slate-600">${l.businessPhone}</span>` : `<span class="text-slate-300">-</span>`);
 
           const emailItem = l.businessEmail ? 
@@ -3432,18 +3432,35 @@
     // OUTREACH CAMPAIGNS & LIVE MESSAGES FUNCTIONS
     // ========================================================
 
+    function updateWhatsAppConnectionBadge(connected) {
+      const badge = document.getElementById('global-wa-badge');
+      if (!badge) return;
+      if (connected) {
+        badge.className = 'inline-flex items-center bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 px-2.5 py-1.5 rounded-lg font-medium';
+        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-1.5"></span> WhatsApp Connected';
+      } else {
+        badge.className = 'inline-flex items-center bg-rose-950/80 text-rose-400 border border-rose-800/80 px-2.5 py-1.5 rounded-lg font-medium';
+        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500 mr-1.5"></span> WhatsApp Offline';
+      }
+    }
+
     async function loadOutreachStats() {
       try {
         const res = await fetch('/api/outreach/stats');
         const data = await res.json();
-        if (data.success && data.stats) {
-          const s = data.stats;
-          document.getElementById('stat-outreach-campaigns').innerText = s.totalCampaigns.toLocaleString();
-          document.getElementById('stat-outreach-sent').innerText = s.totalSent.toLocaleString();
-          document.getElementById('stat-outreach-replies').innerText = s.totalReplies.toLocaleString();
-          document.getElementById('stat-outreach-rate').innerText = `${s.responseRate}%`;
-          document.getElementById('stat-outreach-interested').innerText = s.interestedCount.toLocaleString();
-          document.getElementById('stat-outreach-optouts').innerText = s.optOutCount.toLocaleString();
+        if (data.success) {
+          if (data.isWhatsAppConnected !== undefined) {
+            updateWhatsAppConnectionBadge(data.isWhatsAppConnected);
+          }
+          if (data.stats) {
+            const s = data.stats;
+            document.getElementById('stat-outreach-campaigns').innerText = s.totalCampaigns.toLocaleString();
+            document.getElementById('stat-outreach-sent').innerText = s.totalSent.toLocaleString();
+            document.getElementById('stat-outreach-replies').innerText = s.totalReplies.toLocaleString();
+            document.getElementById('stat-outreach-rate').innerText = `${s.responseRate}%`;
+            document.getElementById('stat-outreach-interested').innerText = s.interestedCount.toLocaleString();
+            document.getElementById('stat-outreach-optouts').innerText = s.optOutCount.toLocaleString();
+          }
         }
       } catch (e) {
         console.error('Failed to load outreach stats:', e);

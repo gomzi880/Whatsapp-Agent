@@ -14,7 +14,7 @@ import {
   markFollowUpSent,
   getFollowUpText,
 } from './followup.js';
-import { registerWhatsAppSocket } from './src/outreach/outreachService.js';
+import { registerWhatsAppSocket, unregisterWhatsAppSocket } from './src/outreach/outreachService.js';
 import { processProspectReply } from './src/outreach/campaignManager.js';
 import { recordLeadMessage } from './src/database/db.js';
 
@@ -149,6 +149,7 @@ async function startWhatsAppBot() {
     }
 
     if (connection === 'close') {
+      unregisterWhatsAppSocket();
       const statusCode = lastDisconnect?.error?.output?.statusCode;
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
 

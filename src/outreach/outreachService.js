@@ -3,20 +3,36 @@
  */
 
 let activeSocket = null;
+let isConnectedState = false;
 
 /**
  * Register the active Baileys socket connection from index.js
  */
 export function registerWhatsAppSocket(sock) {
   activeSocket = sock;
+  isConnectedState = true;
   console.log('📡 [Outreach Service] WhatsApp socket registered successfully.');
+}
+
+/**
+ * Unregister Baileys socket connection when disconnected
+ */
+export function unregisterWhatsAppSocket() {
+  isConnectedState = false;
+  console.log('📡 [Outreach Service] WhatsApp socket marked offline.');
 }
 
 /**
  * Check if the WhatsApp socket is active and connected
  */
 export function isWhatsAppConnected() {
-  return activeSocket !== null && activeSocket.ws?.readyState === 1;
+  if (isConnectedState && activeSocket) return true;
+  if (!activeSocket) return false;
+  return Boolean(
+    activeSocket.ws?.isOpen ||
+    activeSocket.ws?.socket?.readyState === 1 ||
+    activeSocket.user
+  );
 }
 
 /**
