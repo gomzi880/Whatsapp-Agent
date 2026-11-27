@@ -1026,46 +1026,62 @@ export function recordLeadMessage({ leadId = null, campaignId = null, remoteJid,
 /**
  * Fetch messages with filters and pagination
  */
-export function getLeadMessages({ leadId, campaignId, remoteJid, role, intent, order = 'desc', limit = 50, offset = 0 } = {}) {
+export function getLeadMessages({ leadId, campaignId, remoteJid, role, intent, order = 'desc', latestOnly = false, limit = 50, offset = 0 } = {}) {
   let whereClauses = [];
   let params = [];
 
   if (leadId) {
-    whereClauses.push('leadId = ?');
+    whereClauses.push('m.leadId = ?');
     params.push(leadId);
   }
   if (campaignId) {
-    whereClauses.push('campaignId = ?');
+    whereClauses.push('m.campaignId = ?');
     params.push(campaignId);
   }
   if (remoteJid) {
     const digits = remoteJid.replace(/[^0-9]/g, '');
     if (digits) {
-      whereClauses.push('(remoteJid = ? OR remoteJid LIKE ?)');
+      whereClauses.push('(m.remoteJid = ? OR m.remoteJid LIKE ?)');
       params.push(remoteJid, `%${digits}%`);
     } else {
-      whereClauses.push('remoteJid = ?');
+      whereClauses.push('m.remoteJid = ?');
       params.push(remoteJid);
     }
   }
   if (role) {
-    whereClauses.push('senderRole = ?');
+    whereClauses.push('m.senderRole = ?');
     params.push(role);
   }
   if (intent) {
-    whereClauses.push('intent = ?');
+    whereClauses.push('m.intent = ?');
     params.push(intent);
   }
 
   const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
-
-  const total = db.prepare(`SELECT COUNT(*) as count FROM lead_messages ${whereSql}`).get(...params).count;
-
   const sortDirection = String(order).toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+  let joinLatestSql = '';
+  if (latestOnly && !remoteJid) {
+    joinLatestSql = `
+      INNER JOIN (
+        SELECT MAX(id) as max_id
+        FROM lead_messages
+        GROUP BY remoteJid
+      ) latest ON m.id = latest.max_id
+    `;
+  }
+
+  const total = db.prepare(`
+    SELECT COUNT(*) as count 
+    FROM lead_messages m 
+    ${joinLatestSql}
+    ${whereSql}
+  `).get(...params).count;
 
   const rows = db.prepare(`
     SELECT m.*, l.gymName, l.city, l.country
     FROM lead_messages m
+    ${joinLatestSql}
     LEFT JOIN leads l ON m.leadId = l.id
     ${whereSql}
     ORDER BY m.id ${sortDirection}

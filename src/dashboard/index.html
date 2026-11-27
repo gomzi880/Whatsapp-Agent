@@ -1110,20 +1110,33 @@
           <div>
             <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center">
               <i class="fa-solid fa-comments text-indigo-600 mr-2"></i> Live Message &amp; Reply Feed
-              <span class="ml-2.5 inline-flex items-center text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1"></span> Live Sync (3s)
+              <span id="live-sync-indicator" class="ml-2.5 inline-flex items-center text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 transition-all">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1.5"></span> Live Sync (3s)
               </span>
             </h4>
             <p class="text-[11px] text-slate-500">Real-time prospect replies, automated responses, intent classifications and opt-outs</p>
           </div>
 
-          <!-- Message Filter Tabs -->
-          <div class="flex flex-wrap items-center gap-1.5">
-            <button onclick="filterMessagesRole('')" class="msg-filter-btn px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-indigo-600 text-white shadow-xs" data-role="">All</button>
-            <button onclick="filterMessagesRole('prospect')" class="msg-filter-btn px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" data-role="prospect">Prospect Replies</button>
-            <button onclick="filterMessagesRole('agent')" class="msg-filter-btn px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" data-role="agent">Agent Sent</button>
-            <button onclick="filterMessagesIntent('opt_out')" class="msg-filter-btn px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-rose-700 hover:bg-slate-100" data-intent="opt_out">Opt-Outs</button>
-            <button onclick="filterMessagesIntent('demo_requested')" class="msg-filter-btn px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-emerald-700 hover:bg-slate-100" data-intent="demo_requested">Demo Requests</button>
+          <!-- View Mode & Message Filter Tabs -->
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- View Mode: Latest Conversations vs All Logs -->
+            <div class="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-[11px] font-bold">
+              <button onclick="setMessageGrouping('latest')" id="btn-group-latest" class="px-2.5 py-0.5 rounded-md bg-white text-emerald-800 shadow-xs transition" title="Show only the latest message for each contact">
+                <i class="fa-solid fa-comments mr-1 text-emerald-600"></i> Conversations
+              </button>
+              <button onclick="setMessageGrouping('all')" id="btn-group-all" class="px-2.5 py-0.5 rounded-md text-slate-600 hover:text-slate-900 transition" title="Show all message logs individually">
+                <i class="fa-solid fa-list mr-1 text-slate-500"></i> All Logs
+              </button>
+            </div>
+
+            <!-- Role & Intent Filter Buttons -->
+            <div class="flex flex-wrap items-center gap-1.5 border-l border-slate-200 pl-2">
+              <button onclick="filterMessagesRole('')" class="msg-filter-btn px-2 py-0.5 text-[11px] font-semibold rounded-lg bg-indigo-600 text-white shadow-xs" data-role="">All</button>
+              <button onclick="filterMessagesRole('prospect')" class="msg-filter-btn px-2 py-0.5 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" data-role="prospect">Prospects</button>
+              <button onclick="filterMessagesRole('agent')" class="msg-filter-btn px-2 py-0.5 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" data-role="agent">Agent</button>
+              <button onclick="filterMessagesIntent('opt_out')" class="msg-filter-btn px-2 py-0.5 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-rose-700 hover:bg-slate-100" data-intent="opt_out">Opt-Outs</button>
+              <button onclick="filterMessagesIntent('demo_requested')" class="msg-filter-btn px-2 py-0.5 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-emerald-700 hover:bg-slate-100" data-intent="demo_requested">Demo Requests</button>
+            </div>
           </div>
         </div>
 
@@ -3521,16 +3534,49 @@
     let activeChatModalJid = null;
     let chatModalTimer = null;
     let liveOutreachTimer = null;
+    let currentMessageGrouping = 'latest'; // 'latest' (unique contact conversations) or 'all' (raw logs)
+
+    function setMessageGrouping(grp) {
+      currentMessageGrouping = grp;
+      const btnLatest = document.getElementById('btn-group-latest');
+      const btnAll = document.getElementById('btn-group-all');
+      if (btnLatest) {
+        btnLatest.className = grp === 'latest' 
+          ? 'px-2.5 py-0.5 rounded-md bg-white text-emerald-800 shadow-xs transition'
+          : 'px-2.5 py-0.5 rounded-md text-slate-600 hover:text-slate-900 transition';
+      }
+      if (btnAll) {
+        btnAll.className = grp === 'all'
+          ? 'px-2.5 py-0.5 rounded-md bg-white text-emerald-800 shadow-xs transition'
+          : 'px-2.5 py-0.5 rounded-md text-slate-600 hover:text-slate-900 transition';
+      }
+      loadOutreachMessages();
+    }
 
     function startLiveOutreachPolling() {
       if (liveOutreachTimer) clearInterval(liveOutreachTimer);
-      liveOutreachTimer = setInterval(() => {
-        const outreachTab = document.getElementById('tab-outreach');
-        if (outreachTab && !outreachTab.classList.contains('hidden')) {
-          loadOutreachMessages();
+      liveOutreachTimer = setInterval(async () => {
+        const tabEl = document.getElementById('tab-outreach');
+        const isOutreachVisible = activeTab === 'outreach' || (tabEl && !tabEl.classList.contains('hidden'));
+        if (isOutreachVisible) {
+          try {
+            await loadOutreachMessages();
+            await loadOutreachStats();
+
+            // Flash sync indicator to visually confirm active sync
+            const badge = document.getElementById('live-sync-indicator');
+            if (badge) {
+              badge.classList.add('bg-emerald-200');
+              setTimeout(() => badge.classList.remove('bg-emerald-200'), 500);
+            }
+          } catch (e) {
+            console.warn('Live outreach poll error:', e);
+          }
         }
       }, 3000);
     }
+    // Launch polling immediately
+    startLiveOutreachPolling();
 
     async function openWhatsAppChatModal(remoteJid, gymName, phoneDigits) {
       activeChatModalJid = remoteJid;
@@ -3678,6 +3724,9 @@
       const params = new URLSearchParams({ limit: 50 });
       if (currentMessageRoleFilter) params.append('role', currentMessageRoleFilter);
       if (currentMessageIntentFilter) params.append('intent', currentMessageIntentFilter);
+
+      const isLatest = currentMessageGrouping === 'latest' && !currentMessageRoleFilter && !currentMessageIntentFilter;
+      params.append('latestOnly', isLatest ? 'true' : 'false');
 
       try {
         const res = await fetch(`/api/outreach/messages?${params.toString()}`);

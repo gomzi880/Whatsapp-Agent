@@ -158,14 +158,22 @@ export async function processProspectReply(remoteJid, messageText) {
   }
 
   // Record incoming message in database ALWAYS (for BOTH registered leads AND direct WhatsApp contacts)
-  recordLeadMessage({
-    leadId: lead ? lead.id : null,
-    remoteJid,
-    senderRole: 'prospect',
-    messageText,
-    status: 'received',
-    intent
-  });
+  const recentExisting = db.prepare(`
+    SELECT id FROM lead_messages 
+    WHERE remoteJid = ? AND senderRole = 'prospect' AND messageText = ? AND createdAt >= datetime('now', '-10 seconds')
+    ORDER BY id DESC LIMIT 1
+  `).get(remoteJid, messageText);
+
+  if (!recentExisting) {
+    recordLeadMessage({
+      leadId: lead ? lead.id : null,
+      remoteJid,
+      senderRole: 'prospect',
+      messageText,
+      status: 'received',
+      intent
+    });
+  }
 
   // If opted out, send courteous acknowledgment immediately and do not generate sales pitch
   if (haltOutreach && optOutAckMessage) {

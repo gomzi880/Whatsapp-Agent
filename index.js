@@ -324,6 +324,30 @@ async function startWhatsAppBot() {
 
       console.log(`\n📩 Incoming from ${remoteJid}: "${text}"`);
 
+      // Immediately record incoming prospect message (Guaranteed write to database)
+      try {
+        const foundLead = findLeadByPhoneOrJid(remoteJid);
+        const incomingIntent = detectProspectIntent(text);
+        const recentCheck = db.prepare(`
+          SELECT id FROM lead_messages
+          WHERE remoteJid = ? AND senderRole = 'prospect' AND messageText = ? AND createdAt >= datetime('now', '-10 seconds')
+          LIMIT 1
+        `).get(remoteJid, text);
+        if (!recentCheck) {
+          recordLeadMessage({
+            leadId: foundLead ? foundLead.id : null,
+            campaignId: null,
+            remoteJid,
+            senderRole: 'prospect',
+            messageText: text,
+            status: 'received',
+            intent: incomingIntent
+          });
+        }
+      } catch (err) {
+        console.warn('Direct message record notice:', err.message);
+      }
+
       // Conversation Intelligence & Lead Status Synchronization
       let activeLead = null;
       try {
