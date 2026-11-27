@@ -46,7 +46,8 @@ export function isConfirmationText(text) {
   const clean = text.toLowerCase().trim();
   return (
     /^(yes|confirm|confirmed|sure|ok|okay|sounds good|done|lock it|book it|book|theek hai|ha|haan|chalega|perfect|agree|fine|yes please)$/i.test(clean) ||
-    /\b(yes please|confirm it|book this|lock this|this works|time works|perfect time)\b/i.test(clean)
+    /\b(yes please|confirm it|confirm|book this|lock this|this works|time works|perfect time|works for me|works perfectly)\b/i.test(clean) ||
+    /^(yes|haan|ha|sure|ok|okay)\b/i.test(clean)
   );
 }
 
@@ -58,7 +59,7 @@ export function isCancellationText(text) {
   const clean = text.toLowerCase().trim();
   return (
     /^(cancel|cancel demo|cancel meeting|mat karo|nahi chahiye demo|don't want demo)$/i.test(clean) ||
-    /\b(cancel the meeting|cancel my demo|cannot attend|not interested in demo|drop the demo)\b/i.test(clean)
+    /\b(cancel the meeting|cancel my demo|cancel demo|cancel meeting|cancel|cannot attend|not interested in demo|drop the demo)\b/i.test(clean)
   );
 }
 
@@ -70,7 +71,7 @@ export function isRescheduleText(text) {
   const clean = text.toLowerCase().trim();
   return (
     /^(reschedule|change time|postpone|dusra time|koi aur time)$/i.test(clean) ||
-    /\b(change the time|reschedule the demo|another time|different date|shift the meeting|can we do later)\b/i.test(clean)
+    /\b(change the time|reschedule the demo|reschedule|another time|different date|shift the meeting|can we do later|dusra time)\b/i.test(clean)
   );
 }
 

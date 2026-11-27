@@ -175,7 +175,18 @@ Respond ONLY with valid JSON in this format:
 
 function matchCategoryFallback(text) {
   const lower = text.toLowerCase();
-  if (lower.includes('not interested') || lower.includes('stop') || lower.includes('unsubscribe') || lower.includes('don\'t contact') || lower.includes('no thanks')) {
+  if (
+    lower.includes('not interested') ||
+    lower.includes('stop') ||
+    lower.includes('unsubscribe') ||
+    lower.includes("don't contact") ||
+    lower.includes('do not contact') ||
+    lower.includes("don't message") ||
+    lower.includes('do not message') ||
+    lower.includes('no thanks') ||
+    lower.includes('manual register') ||
+    lower.includes('no need')
+  ) {
     return 'Not interested';
   }
   if (lower.includes('ready to buy') || lower.includes('buy') || lower.includes('purchase') || lower.includes('sign up') || lower.includes('contract') || lower.includes('start subscription')) {
@@ -190,8 +201,23 @@ function matchCategoryFallback(text) {
   if (lower.includes('feature') || lower.includes('would like') || lower.includes('can you add') || lower.includes('add integration') || lower.includes('improvement') || lower.includes('custom')) {
     return 'Feature request';
   }
-  if (lower.includes('hardware') || lower.includes('biometric') || lower.includes('offline') || lower.includes('bug') || lower.includes('security') || lower.includes('integration') || lower.includes('technical')) {
+  if (
+    lower.includes('hardware problem') ||
+    lower.includes('hardware issue') ||
+    lower.includes('biometric issue') ||
+    lower.includes('biometric problem') ||
+    lower.includes('not working') ||
+    lower.includes('offline') ||
+    lower.includes('bug') ||
+    lower.includes('error') ||
+    lower.includes('failed') ||
+    lower.includes('technical concern') ||
+    lower.includes('technical issue')
+  ) {
     return 'Technical concern';
+  }
+  if (lower.includes('amazing') || lower.includes('loved') || lower.includes('great') || lower.includes('good') || lower.includes('excellent') || lower.includes('wonderful')) {
+    return 'Positive feedback';
   }
   return 'Positive feedback';
 }
@@ -308,9 +334,12 @@ export async function processInboundFeedback({ lead, responseText, channel = 'wh
   };
 }
 
+export const recordCustomerFeedback = processInboundFeedback;
+
 export default {
   FEEDBACK_QUESTIONS,
   generateFeedbackMessage,
   classifyFeedbackResponse,
-  processInboundFeedback
+  processInboundFeedback,
+  recordCustomerFeedback
 };

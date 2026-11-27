@@ -39,9 +39,9 @@ Please reach out directly or schedule an immediate closing conversation.`;
   let whatsappSent = false;
 
   try {
-    const { emailSender } = await import('../email/emailSender.js');
-    if (emailSender && emailSender.isConfigured && emailSender.isConfigured()) {
-      await emailSender.sendEmail({
+    const { sendEmail } = await import('../email/emailService.js');
+    if (sendEmail) {
+      await sendEmail({
         from: 'sales@gymstack.in',
         to: adminEmail,
         subject: alertSubject,
