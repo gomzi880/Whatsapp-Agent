@@ -24,7 +24,9 @@ import {
   getMeetingById,
   getLeadMeetings,
   checkSlotAvailability,
-  updateLeadStatus
+  updateLeadStatus,
+  resolvePhoneNumber,
+  db
 } from '../database/db.js';
 import {
   generateGoogleMeetLink,
@@ -76,12 +78,29 @@ export function isRescheduleText(text) {
 }
 
 /**
- * Finds active pending/waiting meeting for a lead
+ * Finds active pending/waiting meeting for a lead or phone/JID
  */
-export function getActiveLeadMeeting(leadId) {
-  if (!leadId) return null;
-  const meetings = getLeadMeetings(leadId);
-  return meetings.find(m => ['Waiting for Confirmation', 'Requested', 'Scheduled'].includes(m.status)) || null;
+export function getActiveLeadMeeting(leadId, remoteJid = null) {
+  if (leadId) {
+    const meetings = getLeadMeetings(leadId);
+    const active = meetings.find(m => ['Waiting for Confirmation', 'Requested', 'Scheduled', 'Rescheduled'].includes(m.status));
+    if (active) return active;
+  }
+  if (remoteJid) {
+    const clean = String(remoteJid).replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '').trim();
+    const resolved = resolvePhoneNumber ? resolvePhoneNumber(remoteJid) : null;
+    const phone = (resolved || clean).replace(/[^0-9]/g, '');
+    if (phone) {
+      const active = db.prepare(`
+        SELECT * FROM meetings
+        WHERE (whatsappNumber LIKE ? OR whatsappNumber LIKE ?)
+          AND status IN ('Waiting for Confirmation', 'Requested', 'Scheduled', 'Rescheduled')
+        ORDER BY id DESC LIMIT 1
+      `).get(`%${phone}%`, `%${phone.slice(-10)}%`);
+      if (active) return active;
+    }
+  }
+  return null;
 }
 
 /**
@@ -99,7 +118,7 @@ export async function processSchedulingTurn({
   const leadId = lead?.id || null;
   const timeZone = detectTimezone(lead?.country || incomingText);
 
-  let activeMeeting = getActiveLeadMeeting(leadId);
+  let activeMeeting = getActiveLeadMeeting(leadId, remoteJid);
 
   // -------------------------------------------------------------
   // BRANCH 1: PROSPECT REQUESTS CANCELLATION
@@ -186,6 +205,16 @@ I have also dispatched your calendar invite (.ics) to your email. Looking forwar
     if (isFree) {
       const time12 = formatTime12h(targetTime);
       const endTime = computeEndTime(targetTime);
+      const meetingLink = generateGoogleMeetLink();
+      const googleCalendarUrl = generateGoogleCalendarUrl({
+        title: `GymStack 1-on-1 Demo for ${gymName}`,
+        meetingDate: targetDate,
+        startTime: targetTime,
+        endTime,
+        meetingLink
+      });
+
+      const resolvedContactPhone = lead?.whatsappNumber || (remoteJid ? (resolvePhoneNumber(remoteJid) || remoteJid) : null);
 
       let meetingRecord;
       if (activeMeeting) {
@@ -194,6 +223,8 @@ I have also dispatched your calendar invite (.ics) to your email. Looking forwar
           startTime: targetTime,
           endTime,
           timeZone,
+          meetingLink: activeMeeting.meetingLink || meetingLink,
+          googleCalendarUrl: activeMeeting.googleCalendarUrl || googleCalendarUrl,
           status: 'Waiting for Confirmation'
         });
         meetingRecord = getMeetingById(activeMeeting.id);
@@ -203,11 +234,13 @@ I have also dispatched your calendar invite (.ics) to your email. Looking forwar
           gymName,
           ownerName,
           email: lead?.businessEmail || senderEmail,
-          whatsappNumber: lead?.whatsappNumber || remoteJid,
+          whatsappNumber: resolvedContactPhone,
           meetingDate: targetDate,
           startTime: targetTime,
           endTime,
           timeZone,
+          meetingLink,
+          googleCalendarUrl,
           status: 'Waiting for Confirmation',
           channel
         });
@@ -249,16 +282,30 @@ Which of these times works best for you?`,
 
   let meetingRecord = activeMeeting;
   if (!meetingRecord) {
+    const slotTime = tomorrowSlots.slots[0]?.time24 || '15:30';
+    const endTime = computeEndTime(slotTime);
+    const meetingLink = generateGoogleMeetLink();
+    const googleCalendarUrl = generateGoogleCalendarUrl({
+      title: `GymStack 1-on-1 Demo for ${gymName}`,
+      meetingDate: tomorrowSlots.date,
+      startTime: slotTime,
+      endTime,
+      meetingLink
+    });
+    const resolvedContactPhone = lead?.whatsappNumber || (remoteJid ? (resolvePhoneNumber(remoteJid) || remoteJid) : null);
+
     meetingRecord = createMeeting({
       leadId,
       gymName,
       ownerName,
       email: lead?.businessEmail || senderEmail,
-      whatsappNumber: lead?.whatsappNumber || remoteJid,
+      whatsappNumber: resolvedContactPhone,
       meetingDate: tomorrowSlots.date,
-      startTime: tomorrowSlots.slots[0]?.time24 || '15:30',
-      endTime: computeEndTime(tomorrowSlots.slots[0]?.time24 || '15:30'),
+      startTime: slotTime,
+      endTime,
       timeZone,
+      meetingLink,
+      googleCalendarUrl,
       status: 'Requested',
       channel
     });

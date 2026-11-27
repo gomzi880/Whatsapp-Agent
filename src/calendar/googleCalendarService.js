@@ -21,7 +21,11 @@ export const STANDARD_SLOT_TIMES = [
   '14:00',
   '15:30',
   '17:00',
-  '18:30'
+  '18:30',
+  '19:30',
+  '20:00',
+  '20:30',
+  '21:00'
 ];
 
 /**
@@ -185,6 +189,23 @@ export function getAvailableSlots(meetingDate, timeZone = 'Asia/Kolkata (IST)') 
         endTime12: formatTime12h(computeEndTime(slotTime)),
         timeZone
       });
+    }
+  }
+
+  // If target date was today but all daytime slots have already passed, offer tomorrow's daytime slots
+  if (isToday && availableSlots.length === 0) {
+    const tomorrowStr = formatDateYmd(new Date(now.getTime() + 24 * 60 * 60 * 1000));
+    for (const slotTime of STANDARD_SLOT_TIMES) {
+      if (checkSlotAvailability(tomorrowStr, slotTime)) {
+        availableSlots.push({
+          date: tomorrowStr,
+          time24: slotTime,
+          time12: formatTime12h(slotTime),
+          endTime24: computeEndTime(slotTime),
+          endTime12: formatTime12h(computeEndTime(slotTime)),
+          timeZone
+        });
+      }
     }
   }
 

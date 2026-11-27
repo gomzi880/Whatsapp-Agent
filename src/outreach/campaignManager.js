@@ -7,6 +7,8 @@
 
 import db, {
   findLeadByPhoneOrJid,
+  saveOrUpdateLead,
+  resolvePhoneNumber,
   updateLeadStatus,
   recordLeadMessage,
   getEligibleLeadsForOutreach,
@@ -110,8 +112,37 @@ export function detectProspectIntent(text) {
 export async function processProspectReply(remoteJid, messageText) {
   const cleanJid = remoteJid || '';
   const phone = cleanJid.replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '');
-  const lead = findLeadByPhoneOrJid(cleanJid);
+  let lead = findLeadByPhoneOrJid(cleanJid);
   const intent = detectProspectIntent(messageText);
+
+  // If lead not found directly by cleanJid, try with resolved phone
+  if (!lead) {
+    const resolvedPhone = resolvePhoneNumber(cleanJid);
+    if (resolvedPhone) {
+      lead = findLeadByPhoneOrJid(resolvedPhone);
+    }
+  }
+
+  // If still no lead, but the user is requesting a demo or interested or scheduling
+  if (!lead && (intent === 'demo_requested' || intent === 'interested' || /demo|schedule|walkthrough|meeting/i.test(messageText))) {
+    const resolved = resolvePhoneNumber(cleanJid) || phone;
+    const phoneWithPlus = resolved.startsWith('+') ? resolved : `+${resolved}`;
+    try {
+      lead = saveOrUpdateLead({
+        gymName: 'Direct WhatsApp Contact',
+        ownerName: 'Gym Owner',
+        whatsappNumber: phoneWithPlus,
+        businessPhone: phoneWithPlus,
+        city: 'Direct WhatsApp',
+        country: 'India',
+        leadScore: 65,
+        status: 'Meeting Requested'
+      });
+      console.log(`⭐ Auto-registered direct contact as Lead #${lead.id} (${phoneWithPlus}) for scheduling.`);
+    } catch (e) {
+      console.warn('Could not auto-register direct contact lead:', e.message);
+    }
+  }
 
   console.log(`🧠 [Conversation Intelligence] Contact: ${remoteJid} | Detected Intent: "${intent}" | Lead: ${lead ? lead.gymName : 'Direct WhatsApp Contact'}`);
 
@@ -192,12 +223,25 @@ export async function processProspectReply(remoteJid, messageText) {
     }
   }
 
-  // Handle Automatic Meeting Scheduling Workflow if intent is demo_requested or lead has active meeting
+  // Handle Automatic Meeting Scheduling Workflow if intent is demo_requested, lead has active meeting, or incoming text discusses scheduling
   let schedulingReply = null;
   let meeting = null;
   let feedbackResult = null;
 
-  if (lead && (intent === 'demo_requested' || lead.status === 'Meeting Requested')) {
+  let activeMeeting = null;
+  try {
+    const { getActiveLeadMeeting } = await import('../calendar/schedulingStateMachine.js');
+    activeMeeting = getActiveLeadMeeting(lead?.id, remoteJid);
+  } catch (e) {}
+
+  const shouldTriggerScheduling = Boolean(
+    intent === 'demo_requested' || 
+    (lead && lead.status === 'Meeting Requested') ||
+    activeMeeting ||
+    /demo|schedule|meeting|walkthrough|zoom|google meet|today|tomorrow|pm|am|\d\s*baje/i.test(messageText)
+  );
+
+  if (shouldTriggerScheduling) {
     try {
       const { processSchedulingTurn } = await import('../calendar/schedulingStateMachine.js');
       const schedulingResult = await processSchedulingTurn({
