@@ -842,159 +842,6 @@
     </div>
 
     <!-- ======================================================== -->
-    <!-- TAB 5: EMAIL SALES HUB & ACTIVITY DASHBOARD              -->
-    <!-- ======================================================== -->
-    <div id="tab-email" class="hidden space-y-5">
-      
-      <!-- Email Header & Authorized Senders Status -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-        <div>
-          <h3 class="text-sm font-bold text-slate-900 flex items-center">
-            <i class="fa-solid fa-envelope-circle-check text-indigo-600 mr-2 text-base"></i> Email Sales Agent Control Hub
-          </h3>
-          <p class="text-xs text-slate-500">Autonomous personalized introductions, PDF brochure attachments, and RAG-powered responses</p>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-2">
-          <!-- Authorized Senders Pills -->
-          <div class="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span class="text-slate-500">Authorized Accounts:</span>
-            <span class="font-bold text-slate-800">sales@</span> • <span class="font-bold text-slate-800">info@</span> • <span class="font-bold text-slate-800">support@gymstack.in</span>
-          </div>
-
-          <button onclick="openEmailTestModal()" class="bg-slate-800 hover:bg-slate-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
-            <i class="fa-solid fa-paper-plane mr-1.5"></i> Direct / Test Email
-          </button>
-          <button onclick="openEmailCampaignModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
-            <i class="fa-solid fa-plus mr-1.5"></i> Create Email Campaign
-          </button>
-        </div>
-      </div>
-
-      <!-- Email Metrics Dashboard Cards -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-          <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Outbound Sent</p>
-          <p id="stat-email-sent" class="text-xl font-bold text-slate-900 mt-0.5">0</p>
-          <p class="text-[10px] text-slate-400 mt-0.5">Approved intro emails</p>
-        </div>
-
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-          <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Inbound Replies</p>
-          <p id="stat-email-received" class="text-xl font-bold text-indigo-600 mt-0.5">0</p>
-          <p class="text-[10px] text-slate-400 mt-0.5">Gym owner responses</p>
-        </div>
-
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-          <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Reply Rate</p>
-          <p id="stat-email-replyrate" class="text-xl font-bold text-emerald-600 mt-0.5">0%</p>
-          <p class="text-[10px] text-slate-400 mt-0.5">Engagement efficiency</p>
-        </div>
-
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-          <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Interested / Demos</p>
-          <p id="stat-email-interested" class="text-xl font-bold text-blue-600 mt-0.5">0</p>
-          <p class="text-[10px] text-slate-400 mt-0.5">High-intent prospects</p>
-        </div>
-
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-          <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Pending Queue</p>
-          <p id="stat-email-pending" class="text-xl font-bold text-amber-600 mt-0.5">0</p>
-          <p class="text-[10px] text-slate-400 mt-0.5">Awaiting dispatch</p>
-        </div>
-
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-          <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Opt-Outs Cleaned</p>
-          <p id="stat-email-optouts" class="text-xl font-bold text-rose-600 mt-0.5">0</p>
-          <p class="text-[10px] text-slate-400 mt-0.5">Unsubscribed / Stop</p>
-        </div>
-      </div>
-
-      <!-- Section: Email Campaigns Table -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-5 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-          <div>
-            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center">
-              <i class="fa-solid fa-layer-group text-indigo-600 mr-2"></i> Email Outreach Campaigns
-            </h4>
-            <p class="text-[11px] text-slate-500">Staged campaigns require administrator approval before dispatching</p>
-          </div>
-          <button onclick="loadEmailCampaigns()" class="text-slate-400 hover:text-slate-600 text-xs font-medium">
-            <i class="fa-solid fa-arrows-rotate mr-1"></i> Refresh
-          </button>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs text-slate-600">
-            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
-              <tr>
-                <th class="px-4 py-2.5">Campaign Name</th>
-                <th class="px-4 py-2.5">Sender</th>
-                <th class="px-4 py-2.5">Target Location</th>
-                <th class="px-4 py-2.5">Template</th>
-                <th class="px-4 py-2.5 text-center">Progress (Sent/Total)</th>
-                <th class="px-4 py-2.5 text-center">Status</th>
-                <th class="px-4 py-2.5 text-right">Admin Controls</th>
-              </tr>
-            </thead>
-            <tbody id="email-campaigns-table-body" class="divide-y divide-slate-100 font-medium">
-              <tr><td colspan="7" class="text-center py-6 text-slate-400">Loading email campaigns...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Section: Live Email Activity Log & Filters (Sent, Received, Failed, Pending, Replied) -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="p-4 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-slate-50/50">
-          <div>
-            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center">
-              <i class="fa-solid fa-list-check text-blue-600 mr-2"></i> Live Email Activity Log
-            </h4>
-            <p class="text-[11px] text-slate-500">Every outbound intro, inbound question, AI reply, brochure attachment, and opt-out</p>
-          </div>
-
-          <!-- Status & Direction Filters -->
-          <div class="flex flex-wrap items-center gap-1.5">
-            <span class="text-[10px] font-bold text-slate-400 uppercase mr-1">Filter:</span>
-            <button onclick="filterEmailStatus('')" class="email-status-btn px-2 py-1 text-[11px] font-semibold rounded-lg bg-indigo-600 text-white shadow-xs" data-status="">All</button>
-            <button onclick="filterEmailStatus('sent')" class="email-status-btn px-2 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" data-status="sent">Sent</button>
-            <button onclick="filterEmailStatus('replied')" class="email-status-btn px-2 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" data-status="replied">Replied</button>
-            <button onclick="filterEmailStatus('pending')" class="email-status-btn px-2 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" data-status="pending">Pending</button>
-            <button onclick="filterEmailStatus('failed')" class="email-status-btn px-2 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-rose-700 hover:bg-slate-100" data-status="failed">Failed</button>
-            
-            <span class="text-slate-300 mx-1">|</span>
-            
-            <button onclick="filterEmailDirection('')" class="email-dir-btn px-2 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 text-white shadow-xs" data-dir="">All</button>
-            <button onclick="filterEmailDirection('inbound')" class="email-dir-btn px-2 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-indigo-700 hover:bg-slate-100" data-dir="inbound">Inbound</button>
-            <button onclick="filterEmailDirection('outbound')" class="email-dir-btn px-2 py-1 text-[11px] font-semibold rounded-lg bg-white border border-slate-200 text-emerald-700 hover:bg-slate-100" data-dir="outbound">Outbound</button>
-          </div>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs text-slate-600">
-            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
-              <tr>
-                <th class="px-4 py-2.5">Lead / Recipient</th>
-                <th class="px-4 py-2.5">Sender</th>
-                <th class="px-4 py-2.5">Subject &amp; Content</th>
-                <th class="px-4 py-2.5 text-center">Direction</th>
-                <th class="px-4 py-2.5 text-center">Status</th>
-                <th class="px-4 py-2.5 text-center">Intent</th>
-                <th class="px-4 py-2.5 text-center">Attachment</th>
-                <th class="px-4 py-2.5 text-right">Time</th>
-              </tr>
-            </thead>
-            <tbody id="email-logs-table-body" class="divide-y divide-slate-100 font-medium">
-              <tr><td colspan="8" class="text-center py-8 text-slate-400">Loading email activity logs...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- ======================================================== -->
     <!-- TAB 4: OUTREACH CAMPAIGNS & LIVE MESSAGES                -->
     <!-- ======================================================== -->
     <div id="tab-outreach" class="hidden space-y-5">
@@ -2491,7 +2338,35 @@
     let categoriesList = [];
     let activeJobId = null;
     let pollInterval = null;
-    let activeTab = 'overview';
+    const VALID_TABS = ['overview', 'research', 'leads', 'knowledge', 'outreach', 'email', 'calendar', 'feedback'];
+    const TAB_ALIASES = {
+      'section-agents': 'overview',
+      'section-controls': 'overview',
+      'section-audit': 'overview',
+      'dashboard': 'overview',
+      'sales': 'overview',
+      'jobs': 'research',
+      'whatsapp': 'outreach',
+      'campaigns': 'outreach',
+      'scheduler': 'calendar',
+      'schedule': 'calendar',
+      'meetings': 'calendar',
+      'followups': 'feedback',
+      'rag': 'knowledge'
+    };
+
+    function getInitialTab() {
+      const rawHash = (window.location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
+      if (VALID_TABS.includes(rawHash)) return rawHash;
+      if (TAB_ALIASES[rawHash]) return TAB_ALIASES[rawHash];
+      try {
+        const saved = localStorage.getItem('gymstack_active_tab');
+        if (saved && VALID_TABS.includes(saved)) return saved;
+      } catch (e) {}
+      return 'overview';
+    }
+
+    let activeTab = getInitialTab();
     let outreachApprovedState = true;
     let currentMessageRoleFilter = '';
     let currentMessageIntentFilter = '';
@@ -2500,6 +2375,10 @@
     let currentMeetingStatusFilter = '';
 
     document.addEventListener('DOMContentLoaded', async () => {
+      // Restore user active tab immediately to prevent jumping to overview on page reload
+      const initialTab = getInitialTab();
+      switchTab(initialTab, false);
+
       await loadInitialData();
       await loadExecutiveDashboard();
       await loadStats();
@@ -2522,62 +2401,79 @@
       await loadFollowUps();
       await loadHighValueProspects();
       startLiveOutreachPolling();
+
+      // Ensure active tab view and styling are kept post initial load
+      switchTab(initialTab, false);
     });
 
-    function switchTab(tab) {
+    // Support browser Back/Forward navigation between tabs
+    window.addEventListener('hashchange', () => {
+      const rawHash = (window.location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
+      const targetTab = VALID_TABS.includes(rawHash) ? rawHash : TAB_ALIASES[rawHash];
+      if (targetTab && targetTab !== activeTab) {
+        switchTab(targetTab, false);
+      }
+    });
+
+    function switchTab(tab, updateUrl = true) {
+      if (!VALID_TABS.includes(tab)) {
+        tab = TAB_ALIASES[tab] || 'overview';
+      }
       activeTab = tab;
-      document.getElementById('tab-overview').classList.toggle('hidden', tab !== 'overview');
-      document.getElementById('tab-research').classList.toggle('hidden', tab !== 'research');
-      document.getElementById('tab-leads').classList.toggle('hidden', tab !== 'leads');
-      document.getElementById('tab-knowledge').classList.toggle('hidden', tab !== 'knowledge');
-      document.getElementById('tab-outreach').classList.toggle('hidden', tab !== 'outreach');
-      document.getElementById('tab-email').classList.toggle('hidden', tab !== 'email');
-      document.getElementById('tab-calendar').classList.toggle('hidden', tab !== 'calendar');
-      document.getElementById('tab-feedback').classList.toggle('hidden', tab !== 'feedback');
 
-      const btnOverview = document.getElementById('tab-overview-btn');
-      const btnResearch = document.getElementById('tab-research-btn');
-      const btnLeads = document.getElementById('tab-leads-btn');
-      const btnKnowledge = document.getElementById('tab-knowledge-btn');
-      const btnOutreach = document.getElementById('tab-outreach-btn');
-      const btnEmail = document.getElementById('tab-email-btn');
-      const btnCalendar = document.getElementById('tab-calendar-btn');
-      const btnFeedback = document.getElementById('tab-feedback-btn');
+      try {
+        localStorage.setItem('gymstack_active_tab', tab);
+      } catch (e) {}
 
-      btnOverview.className = tab === 'overview'
-        ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all'
-        : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
+      if (updateUrl) {
+        try {
+          if (history.replaceState) {
+            history.replaceState(null, '', '#' + tab);
+          } else {
+            window.location.hash = tab;
+          }
+        } catch (e) {}
+      }
 
-      btnResearch.className = tab === 'research' 
-        ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all'
-        : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
+      const tabs = ['overview', 'research', 'leads', 'knowledge', 'outreach', 'email', 'calendar', 'feedback'];
+      tabs.forEach(t => {
+        const el = document.getElementById('tab-' + t);
+        if (el) el.classList.toggle('hidden', t !== tab);
+      });
 
-      btnLeads.className = tab === 'leads'
-        ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all'
-        : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
+      const colorMap = {
+        overview: 'bg-blue-600',
+        research: 'bg-blue-600',
+        leads: 'bg-blue-600',
+        knowledge: 'bg-purple-600',
+        outreach: 'bg-green-600',
+        email: 'bg-indigo-600',
+        calendar: 'bg-blue-600',
+        feedback: 'bg-rose-600'
+      };
 
-      btnKnowledge.className = tab === 'knowledge'
-        ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-purple-600 text-white shadow transition-all'
-        : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
-
-      btnOutreach.className = tab === 'outreach'
-        ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-green-600 text-white shadow transition-all'
-        : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
-
-      btnEmail.className = tab === 'email'
-        ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white shadow transition-all'
-        : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
-
-      btnCalendar.className = tab === 'calendar'
-        ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all'
-        : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
-
-      btnFeedback.className = tab === 'feedback'
-        ? 'px-3.5 py-2 text-xs font-semibold rounded-lg bg-rose-600 text-white shadow transition-all'
-        : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
+      tabs.forEach(t => {
+        const btn = document.getElementById('tab-' + t + '-btn');
+        if (btn) {
+          btn.className = t === tab
+            ? `px-3.5 py-2 text-xs font-semibold rounded-lg ${colorMap[t]} text-white shadow transition-all`
+            : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
+        }
+      });
 
       if (tab === 'overview') {
         loadExecutiveDashboard();
+      }
+      if (tab === 'research') {
+        loadJobs();
+      }
+      if (tab === 'leads') {
+        loadLeads(1);
+      }
+      if (tab === 'knowledge') {
+        loadKnowledgeStats();
+        loadKnowledgeItems();
+        loadDocuments();
       }
       if (tab === 'outreach') {
         loadOutreachStats();
