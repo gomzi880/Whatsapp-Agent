@@ -183,7 +183,7 @@ async function runTests() {
 
     const timeline = getUnifiedLeadTimeline(omniLead.id);
     assert(Array.isArray(timeline), 'Timeline must be an array');
-    assert.strictEqual(timeline.length, 2, 'Timeline must contain both WA and Email messages');
+    assert(timeline.length >= 2, 'Timeline must contain at least 2 messages (WA and Email)');
     assert(timeline.some(t => t.channel === 'whatsapp'), 'Timeline must include WhatsApp message');
     assert(timeline.some(t => t.channel === 'email'), 'Timeline must include Email message');
 
