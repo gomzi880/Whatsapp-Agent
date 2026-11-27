@@ -13,62 +13,146 @@
     .badge-status { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 9999px; }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col lg:flex-row overflow-x-hidden">
 
-  <!-- Top Navigation Header -->
-  <header class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-lg sticky top-0 z-50 border-b border-slate-800">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
+  <!-- Mobile Top Header (only visible on mobile/tablet < lg) -->
+  <header class="lg:hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-md sticky top-0 z-50 px-4 py-3 flex items-center justify-between border-b border-slate-800">
+    <div class="flex items-center space-x-2.5">
+      <div class="bg-blue-600 text-white w-8 h-8 rounded-lg shadow-sm flex items-center justify-center font-black text-base">
+        <i class="fa-solid fa-dumbbell"></i>
+      </div>
+      <div>
+        <h1 class="text-base font-bold tracking-tight leading-none">GymStack</h1>
+        <span class="text-[10px] text-blue-300 font-medium">AI Sales &amp; Research</span>
+      </div>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span id="mobile-wa-badge" class="inline-flex items-center bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 px-2 py-1 rounded-md text-[10px] font-medium">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1"></span> Connected
+      </span>
+      <button onclick="toggleMobileSidebar()" class="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white focus:outline-none" title="Open Navigation Menu">
+        <i class="fa-solid fa-bars text-sm"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer Backdrop Overlay -->
+  <div id="sidebar-backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-40 hidden lg:hidden transition-opacity"></div>
+
+  <!-- Left-Hand Sidebar Navigation (Sticky on Desktop) -->
+  <aside id="sidebar-menu" class="hidden lg:flex flex-col w-64 xl:w-72 bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 text-white border-r border-slate-800 shrink-0 sticky top-0 h-screen overflow-y-auto z-40 shadow-xl transition-all">
+    <!-- Brand / Logo Area -->
+    <div class="p-4 border-b border-slate-800/80">
       <div class="flex items-center space-x-3">
-        <div class="bg-blue-600 text-white w-10 h-10 rounded-xl shadow-md flex items-center justify-center font-black text-xl">
+        <div class="bg-blue-600 text-white w-10 h-10 rounded-xl shadow-md flex items-center justify-center font-black text-xl shrink-0">
           <i class="fa-solid fa-dumbbell"></i>
         </div>
         <div>
-          <div class="flex items-center space-x-2">
-            <h1 class="text-lg font-bold tracking-tight">GymStack</h1>
-            <span class="text-[11px] font-semibold px-2 py-0.5 bg-blue-900/60 border border-blue-700/60 text-blue-300 rounded-full">AI Sales &amp; Research Platform</span>
+          <div class="flex items-center space-x-1.5">
+            <h1 class="text-lg font-extrabold tracking-tight">GymStack</h1>
+            <span class="text-[9px] font-bold px-1.5 py-0.5 bg-blue-900/70 border border-blue-700/60 text-blue-300 rounded uppercase">AI Sales</span>
           </div>
-          <p class="text-xs text-slate-400">Global Discovery, Real-time RAG Knowledge &amp; WhatsApp Automation</p>
+          <p class="text-[11px] text-slate-400 leading-tight mt-0.5">Autonomous Sales Workforce</p>
         </div>
       </div>
 
-      <!-- Navigation Tabs -->
-      <nav class="flex items-center space-x-1.5 bg-slate-950/80 p-1.5 rounded-xl border border-slate-800">
-        <button onclick="switchTab('overview')" id="tab-overview-btn" class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all">
-          <i class="fa-solid fa-chart-line mr-1.5 text-blue-300"></i> Sales Dashboard
-        </button>
-        <button onclick="switchTab('research')" id="tab-research-btn" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
-          <i class="fa-solid fa-satellite-dish mr-1.5"></i> Global Research
-        </button>
-        <button onclick="switchTab('leads')" id="tab-leads-btn" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
-          <i class="fa-solid fa-users-viewfinder mr-1.5"></i> Leads Database
-        </button>
-        <button onclick="switchTab('knowledge')" id="tab-knowledge-btn" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
-          <i class="fa-solid fa-brain mr-1.5 text-purple-400"></i> Product Knowledge &amp; AI Brain
-        </button>
-        <button onclick="switchTab('outreach')" id="tab-outreach-btn" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
-          <i class="fa-brands fa-whatsapp mr-1.5 text-green-400"></i> Outreach &amp; Live Chats
-        </button>
-        <button onclick="switchTab('email')" id="tab-email-btn" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
-          <i class="fa-solid fa-envelope-circle-check mr-1.5 text-indigo-400"></i> Email Sales Hub
-        </button>
-        <button onclick="switchTab('calendar')" id="tab-calendar-btn" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
-          <i class="fa-solid fa-calendar-check mr-1.5 text-blue-400"></i> Calendar &amp; Scheduler
-        </button>
-        <button onclick="switchTab('feedback')" id="tab-feedback-btn" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
-          <i class="fa-solid fa-comments mr-1.5 text-rose-400"></i> Feedback &amp; Follow-Ups
-        </button>
-      </nav>
-
-      <div class="flex items-center space-x-2 text-xs">
-        <span id="global-wa-badge" class="inline-flex items-center bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 px-2.5 py-1.5 rounded-lg font-medium">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-1.5"></span> WhatsApp Connected
+      <!-- Global WhatsApp Status Pill -->
+      <div class="mt-3.5 flex items-center justify-between bg-slate-950/70 border border-slate-800 px-3 py-2 rounded-xl">
+        <span id="global-wa-badge" class="inline-flex items-center text-emerald-400 text-xs font-semibold">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-2"></span> WhatsApp Connected
         </span>
-        <button onclick="refreshCurrentTab()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg font-medium transition flex items-center">
-          <i class="fa-solid fa-arrows-rotate mr-1.5"></i> Refresh
+        <button onclick="refreshCurrentTab()" title="Refresh Data" class="text-slate-400 hover:text-white text-xs transition">
+          <i class="fa-solid fa-arrows-rotate"></i>
         </button>
       </div>
     </div>
-  </header>
+
+    <!-- Navigation Section Header -->
+    <div class="px-4 pt-3.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+      Sales &amp; Agent Controls
+    </div>
+
+    <!-- Vertical Navigation Menu -->
+    <nav class="flex-1 px-3 py-1 space-y-1 overflow-y-auto">
+      <button onclick="switchTab('overview')" id="tab-overview-btn" class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl bg-blue-600 text-white shadow-md shadow-blue-900/40 transition-all gap-3 text-left">
+        <i class="fa-solid fa-chart-line text-blue-300 w-4 text-center"></i>
+        <span class="truncate">Sales Dashboard</span>
+      </button>
+
+      <button onclick="switchTab('research')" id="tab-research-btn" class="w-full flex items-center px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/70 transition-all gap-3 text-left">
+        <i class="fa-solid fa-satellite-dish text-cyan-400 w-4 text-center"></i>
+        <span class="truncate">Global Research</span>
+      </button>
+
+      <button onclick="switchTab('leads')" id="tab-leads-btn" class="w-full flex items-center px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/70 transition-all gap-3 text-left">
+        <i class="fa-solid fa-users-viewfinder text-blue-400 w-4 text-center"></i>
+        <span class="truncate">Leads Database</span>
+      </button>
+
+      <button onclick="switchTab('knowledge')" id="tab-knowledge-btn" class="w-full flex items-center px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/70 transition-all gap-3 text-left">
+        <i class="fa-solid fa-brain text-purple-400 w-4 text-center"></i>
+        <span class="truncate">Product Knowledge &amp; AI</span>
+      </button>
+
+      <button onclick="switchTab('outreach')" id="tab-outreach-btn" class="w-full flex items-center px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/70 transition-all gap-3 text-left">
+        <i class="fa-brands fa-whatsapp text-green-400 w-4 text-center"></i>
+        <span class="truncate">Outreach &amp; Live Chats</span>
+      </button>
+
+      <button onclick="switchTab('email')" id="tab-email-btn" class="w-full flex items-center px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/70 transition-all gap-3 text-left">
+        <i class="fa-solid fa-envelope-circle-check text-indigo-400 w-4 text-center"></i>
+        <span class="truncate">Email Sales Hub</span>
+      </button>
+
+      <button onclick="switchTab('calendar')" id="tab-calendar-btn" class="w-full flex items-center px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/70 transition-all gap-3 text-left">
+        <i class="fa-solid fa-calendar-check text-blue-400 w-4 text-center"></i>
+        <span class="truncate">Calendar &amp; Scheduler</span>
+      </button>
+
+      <button onclick="switchTab('feedback')" id="tab-feedback-btn" class="w-full flex items-center px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/70 transition-all gap-3 text-left">
+        <i class="fa-solid fa-comments text-rose-400 w-4 text-center"></i>
+        <span class="truncate">Feedback &amp; Follow-Ups</span>
+      </button>
+    </nav>
+
+    <!-- Sidebar Bottom Footer Area -->
+    <div class="p-3 border-t border-slate-800/80 bg-slate-950/40 space-y-2">
+      <div class="px-2 py-1 flex items-center justify-between text-[11px] text-slate-400">
+        <span class="flex items-center"><i class="fa-solid fa-shield-halved text-emerald-400 mr-1.5"></i> Admin Logged In</span>
+        <span class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono">v2.4</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button onclick="refreshCurrentTab()" class="flex-1 bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center justify-center">
+          <i class="fa-solid fa-arrows-rotate mr-1.5 text-blue-400"></i> Refresh
+        </button>
+        <a href="/logout" title="Sign out" class="bg-red-950/60 hover:bg-red-900/80 text-red-200 border border-red-800/60 px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center justify-center">
+          <i class="fa-solid fa-arrow-right-from-bracket text-red-400"></i>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right-Hand Main Content Area -->
+  <div class="flex-1 flex flex-col min-w-0 min-h-screen overflow-y-auto">
+
+    <!-- Desktop Secondary Header / Active View Indicator -->
+    <header class="hidden lg:flex items-center justify-between px-6 py-3.5 bg-white border-b border-slate-200 shadow-xs sticky top-0 z-30">
+      <div class="flex items-center space-x-2.5">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">View</span>
+        <span class="text-slate-300">/</span>
+        <span id="active-tab-title" class="text-xs font-extrabold text-slate-800 flex items-center">
+          <i class="fa-solid fa-chart-line text-blue-600 mr-1.5"></i> Sales Dashboard
+        </span>
+      </div>
+      <div class="flex items-center space-x-3 text-xs">
+        <span class="inline-flex items-center text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg font-medium text-[11px]">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span> Live Telemetry
+        </span>
+        <button onclick="refreshCurrentTab()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3 py-1.5 rounded-lg font-medium transition flex items-center shadow-2xs">
+          <i class="fa-solid fa-arrows-rotate mr-1.5 text-slate-500"></i> Quick Refresh
+        </button>
+      </div>
+    </header>
 
   <!-- Outreach Safety Guardrail Banner -->
   <div id="outreach-banner" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 w-full">
@@ -1507,6 +1591,7 @@
     </div>
 
   </main>
+  </div>
 
   <!-- ======================================================== -->
   <!-- MODAL 1: ADD / EDIT KNOWLEDGE ITEM                       -->
@@ -2415,6 +2500,22 @@
       }
     });
 
+    function toggleMobileSidebar() {
+      const sidebar = document.getElementById('sidebar-menu');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      if (!sidebar) return;
+      const isHidden = sidebar.classList.contains('hidden');
+      if (isHidden) {
+        sidebar.classList.remove('hidden');
+        sidebar.classList.add('flex', 'fixed', 'inset-y-0', 'left-0', 'z-50', 'w-72');
+        if (backdrop) backdrop.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('hidden');
+        sidebar.classList.remove('fixed', 'inset-y-0', 'left-0', 'z-50', 'w-72');
+        if (backdrop) backdrop.classList.add('hidden');
+      }
+    }
+
     function switchTab(tab, updateUrl = true) {
       if (!VALID_TABS.includes(tab)) {
         tab = TAB_ALIASES[tab] || 'overview';
@@ -2442,24 +2543,51 @@
       });
 
       const colorMap = {
-        overview: 'bg-blue-600',
-        research: 'bg-blue-600',
-        leads: 'bg-blue-600',
-        knowledge: 'bg-purple-600',
-        outreach: 'bg-green-600',
-        email: 'bg-indigo-600',
-        calendar: 'bg-blue-600',
-        feedback: 'bg-rose-600'
+        overview: 'bg-blue-600 shadow-blue-900/50',
+        research: 'bg-blue-600 shadow-blue-900/50',
+        leads: 'bg-blue-600 shadow-blue-900/50',
+        knowledge: 'bg-purple-600 shadow-purple-900/50',
+        outreach: 'bg-green-600 shadow-green-900/50',
+        email: 'bg-indigo-600 shadow-indigo-900/50',
+        calendar: 'bg-blue-600 shadow-blue-900/50',
+        feedback: 'bg-rose-600 shadow-rose-900/50'
       };
 
       tabs.forEach(t => {
         const btn = document.getElementById('tab-' + t + '-btn');
         if (btn) {
           btn.className = t === tab
-            ? `px-3.5 py-2 text-xs font-semibold rounded-lg ${colorMap[t]} text-white shadow transition-all`
-            : 'px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
+            ? `w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl ${colorMap[t]} text-white shadow-md transition-all gap-3 text-left`
+            : 'w-full flex items-center px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/70 transition-all gap-3 text-left';
         }
       });
+
+      const tabMeta = {
+        overview: { label: 'Sales Dashboard', icon: 'fa-solid fa-chart-line text-blue-600' },
+        research: { label: 'Global Research', icon: 'fa-solid fa-satellite-dish text-cyan-600' },
+        leads: { label: 'Leads Database', icon: 'fa-solid fa-users-viewfinder text-blue-600' },
+        knowledge: { label: 'Product Knowledge & AI Brain', icon: 'fa-solid fa-brain text-purple-600' },
+        outreach: { label: 'Outreach & Live Chats', icon: 'fa-brands fa-whatsapp text-green-600' },
+        email: { label: 'Email Sales Hub', icon: 'fa-solid fa-envelope-circle-check text-indigo-600' },
+        calendar: { label: 'Calendar & Scheduler', icon: 'fa-solid fa-calendar-check text-blue-600' },
+        feedback: { label: 'Feedback & Follow-Ups', icon: 'fa-solid fa-comments text-rose-600' }
+      };
+
+      const titleEl = document.getElementById('active-tab-title');
+      if (titleEl && tabMeta[tab]) {
+        titleEl.innerHTML = `<i class="${tabMeta[tab].icon} mr-1.5"></i> ${tabMeta[tab].label}`;
+      }
+
+      // Close mobile drawer if open
+      if (window.innerWidth < 1024) {
+        const sidebar = document.getElementById('sidebar-menu');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        if (sidebar && !sidebar.classList.contains('hidden')) {
+          sidebar.classList.add('hidden');
+          sidebar.classList.remove('fixed', 'inset-y-0', 'left-0', 'z-50', 'w-72');
+          if (backdrop) backdrop.classList.add('hidden');
+        }
+      }
 
       if (tab === 'overview') {
         loadExecutiveDashboard();
@@ -3330,13 +3458,25 @@
 
     function updateWhatsAppConnectionBadge(connected) {
       const badge = document.getElementById('global-wa-badge');
-      if (!badge) return;
-      if (connected) {
-        badge.className = 'inline-flex items-center bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 px-2.5 py-1.5 rounded-lg font-medium';
-        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-1.5"></span> WhatsApp Connected';
-      } else {
-        badge.className = 'inline-flex items-center bg-rose-950/80 text-rose-400 border border-rose-800/80 px-2.5 py-1.5 rounded-lg font-medium';
-        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500 mr-1.5"></span> WhatsApp Offline';
+      if (badge) {
+        if (connected) {
+          badge.className = 'inline-flex items-center text-emerald-400 text-xs font-semibold';
+          badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-2"></span> WhatsApp Connected';
+        } else {
+          badge.className = 'inline-flex items-center text-rose-400 text-xs font-semibold';
+          badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500 mr-2"></span> WhatsApp Offline';
+        }
+      }
+
+      const mobileBadge = document.getElementById('mobile-wa-badge');
+      if (mobileBadge) {
+        if (connected) {
+          mobileBadge.className = 'inline-flex items-center bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 px-2 py-1 rounded-md text-[10px] font-medium';
+          mobileBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1"></span> Connected';
+        } else {
+          mobileBadge.className = 'inline-flex items-center bg-rose-950/80 text-rose-400 border border-rose-800/80 px-2 py-1 rounded-md text-[10px] font-medium';
+          mobileBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1"></span> Offline';
+        }
       }
     }
 
