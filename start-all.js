@@ -3,5 +3,9 @@
  */
 import './src/dashboard/server.js';
 import './index.js';
+import { startDailyResearchScheduler } from './src/scheduler/researchScheduler.js';
 
-console.log('🚀 GymStack System Active: Both WhatsApp Agent & Research Dashboard are running!');
+// Start the daily automatic gym research scheduler (Runs every day 7:00 AM - 10:00 AM IST)
+startDailyResearchScheduler();
+
+console.log('🚀 GymStack System Active: WhatsApp Agent, Dashboard & Daily 7 AM Research Scheduler are running!');
