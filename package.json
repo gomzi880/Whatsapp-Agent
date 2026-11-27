@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node index.js",
     "dashboard": "node src/dashboard/server.js",
+    "create-admin": "node scripts/setup-admin.js",
     "all": "node start-all.js"
   },
   "dependencies": {

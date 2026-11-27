@@ -365,6 +365,9 @@ async function runMasterE2ETest() {
   // -------------------------------------------------------------
   let meetingId = null;
   try {
+    // Clear any leftover test meetings for testLeadAId so Turn 1 begins clean
+    db.prepare('DELETE FROM meetings WHERE leadId = ?').run(testLeadAId);
+
     // 17a. Unconfirmed turn should NOT book
     const turn1 = await processSchedulingTurn({
       lead: { id: testLeadAId, gymName: 'Olympia Fitness', ownerName: 'Sunil' },

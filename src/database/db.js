@@ -325,6 +325,34 @@ db.exec(`
     totalExecutionTimeSeconds INTEGER DEFAULT 0,
     updatedAt TEXT DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS admin_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    passwordHash TEXT NOT NULL,
+    salt TEXT NOT NULL,
+    role TEXT DEFAULT 'admin',
+    failedAttempts INTEGER DEFAULT 0,
+    lockedUntil TEXT,
+    lastLoginAt TEXT,
+    createdAt TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS login_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    token TEXT UNIQUE NOT NULL,
+    userId INTEGER NOT NULL,
+    expiresAt TEXT NOT NULL,
+    ipAddress TEXT,
+    userAgent TEXT,
+    createdAt TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY(userId) REFERENCES admin_users(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_sessions_token ON login_sessions(token);
+  CREATE INDEX IF NOT EXISTS idx_sessions_userId ON login_sessions(userId);
+  CREATE INDEX IF NOT EXISTS idx_sessions_expiresAt ON login_sessions(expiresAt);
 `);
 
 /**

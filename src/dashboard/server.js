@@ -127,6 +127,8 @@ import {
   generatePersonalizedIntro
 } from '../outreach/campaignManager.js';
 import { isWhatsAppConnected } from '../outreach/outreachService.js';
+import { requireAdminAuth, parseCookies, COOKIE_NAME } from '../auth/sessionMiddleware.js';
+import { authenticateAdmin, createSession, revokeSession, hasAdminAccount } from '../auth/authService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -136,6 +138,93 @@ const PORT = process.env.DASHBOARD_PORT || process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Enforce Administrator Authentication across dashboard and APIs
+app.use(requireAdminAuth);
+
+// ==========================================
+// AUTHENTICATION ROUTES (PHASE 2)
+// ==========================================
+
+// Serve Login Page
+app.get('/login', (req, res) => {
+  const loginViewPath = path.resolve(__dirname, 'views', 'login.html');
+  if (fs.existsSync(loginViewPath)) {
+    return res.sendFile(loginViewPath);
+  }
+  res.send('<h2>GymStack Administrator Sign In</h2><form method="POST" action="/api/auth/login"><input name="identifier" placeholder="Username"/><input name="password" type="password"/><button type="submit">Sign In</button></form>');
+});
+
+// Admin Login Endpoint
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { identifier, password, rememberMe } = req.body;
+    if (!identifier || !password) {
+      return res.status(400).json({ success: false, error: 'Username/Email and password are required' });
+    }
+
+    const ip = req.ip || req.socket.remoteAddress || '';
+    const result = await authenticateAdmin(identifier, password, ip);
+
+    if (!result.success) {
+      return res.status(401).json({ success: false, error: result.reason });
+    }
+
+    const session = createSession(result.user.id, {
+      rememberMe: !!rememberMe,
+      ipAddress: ip,
+      userAgent: req.headers['user-agent'] || ''
+    });
+
+    const maxAgeSeconds = Math.floor(session.maxAgeMs / 1000);
+    res.setHeader('Set-Cookie', `${COOKIE_NAME}=${session.token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}`);
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      user: result.user
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Admin Logout Endpoint
+app.all(['/logout', '/api/auth/logout'], (req, res) => {
+  try {
+    const cookies = parseCookies(req.headers.cookie || '');
+    const token = cookies[COOKIE_NAME];
+    if (token) {
+      revokeSession(token);
+    }
+
+    res.setHeader('Set-Cookie', `${COOKIE_NAME}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax`);
+
+    if (req.headers.accept?.includes('application/json')) {
+      return res.json({ success: true, message: 'Logged out successfully' });
+    }
+    res.redirect('/login');
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Current Authenticated Session Status
+app.get('/api/auth/me', (req, res) => {
+  if (req.user) {
+    return res.json({
+      success: true,
+      authenticated: true,
+      user: {
+        id: req.user.userId,
+        username: req.user.username,
+        email: req.user.email,
+        role: req.user.role
+      }
+    });
+  }
+  res.status(401).json({ success: false, authenticated: false });
+});
 
 // Setup multer storage for Knowledge Base Documents
 const uploadsDir = path.resolve('./uploads/knowledge');
