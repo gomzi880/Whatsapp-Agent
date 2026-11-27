@@ -482,6 +482,59 @@ export function normalizePhone(phone) {
 }
 
 /**
+ * Checks whether a given phone number is a valid mobile phone capable of receiving WhatsApp.
+ * Accurately filters out fixed landlines with city/STD codes (e.g. 0755 Bhopal, 0731 Indore, 011 Delhi, 022 Mumbai, 080 Bangalore).
+ */
+export function isMobileNumber(phone, country = 'India') {
+  if (!phone) return false;
+  const digits = String(phone).replace(/[^0-9]/g, '');
+
+  const isIndia = !country || country.toLowerCase() === 'india' || digits.startsWith('91') || digits.length === 10;
+  if (isIndia) {
+    let localDigits = digits;
+    if (localDigits.length === 12 && localDigits.startsWith('91')) {
+      localDigits = localDigits.slice(2);
+    } else if (localDigits.length === 11 && localDigits.startsWith('0')) {
+      localDigits = localDigits.slice(1);
+    }
+
+    if (localDigits.length !== 10) return false;
+
+    // In India, mobile numbers MUST start with 6, 7, 8, or 9
+    if (!/^[6-9]/.test(localDigits)) return false;
+
+    // Filter out common Indian landline STD city codes starting with 7 or 8 followed by landline subscriber numbers:
+    // 755 (Bhopal), 731 (Indore), 761 (Jabalpur), 771 (Raipur), 712 (Nagpur), 744 (Kota), 721 (Amravati), 724 (Akola)
+    // 802, 804, 806 (Bangalore landlines with STD 080)
+    if (/^7(55|31|61|71|12|44|21|24)/.test(localDigits)) return false;
+    if (/^80[2-6]\d{6}$/.test(localDigits)) return false;
+
+    return true;
+  }
+
+  // Non-India international numbers
+  return digits.length >= 10 && digits.length <= 15;
+}
+
+/**
+ * Formats a valid mobile number for WhatsApp messaging (e.g. +919827012345)
+ */
+export function formatMobileForWhatsApp(phone, country = 'India') {
+  if (!phone || !isMobileNumber(phone, country)) return null;
+  const digits = String(phone).replace(/[^0-9]/g, '');
+  if (digits.length === 10) {
+    return `+91${digits}`;
+  }
+  if (digits.length === 12 && digits.startsWith('91')) {
+    return `+${digits}`;
+  }
+  if (digits.length === 11 && digits.startsWith('0')) {
+    return `+91${digits.slice(1)}`;
+  }
+  return `+${digits}`;
+}
+
+/**
  * Calculates lead quality score (0 - 100)
  */
 export function computeLeadScore(lead) {
@@ -525,10 +578,17 @@ export const VALID_STATUSES = [
 export function saveOrUpdateLead(lead) {
   const normalizedName = normalizeString(lead.gymName);
   const domain = extractDomain(lead.website);
-  const normalizedPhone = normalizePhone(lead.businessPhone || lead.whatsappNumber);
-  const normalizedEmail = lead.businessEmail ? lead.businessEmail.trim().toLowerCase() : null;
   const city = (lead.city || 'Unknown').trim();
   const country = (lead.country || 'India').trim();
+
+  // Validate if the candidate phone is a genuine mobile phone capable of receiving WhatsApp vs a fixed landline
+  const candidatePhone = lead.whatsappNumber || lead.businessPhone;
+  const isMobile = isMobileNumber(candidatePhone, country);
+  const verifiedWhatsApp = isMobile ? formatMobileForWhatsApp(candidatePhone, country) : null;
+  const businessPhoneClean = lead.businessPhone ? String(lead.businessPhone).trim() : (verifiedWhatsApp || null);
+  const normalizedPhone = normalizePhone(verifiedWhatsApp || businessPhoneClean);
+  const normalizedEmail = lead.businessEmail ? lead.businessEmail.trim().toLowerCase() : null;
+  const hasWhatsApp = isMobile ? 1 : 0;
 
   // Deduplication check: Match by domain, phone, or normalized name + city
   let existing = null;
@@ -547,7 +607,7 @@ export function saveOrUpdateLead(lead) {
       .get(normalizedName, city, country);
   }
 
-  const score = computeLeadScore({ ...lead, domain, normalizedPhone, normalizedEmail });
+  const score = computeLeadScore({ ...lead, domain, normalizedPhone, normalizedEmail, hasWhatsApp, whatsappNumber: verifiedWhatsApp });
   const status = lead.status && VALID_STATUSES.includes(lead.status) ? lead.status : (score >= 60 ? 'Qualified' : 'New');
   const now = new Date().toISOString();
 
@@ -557,8 +617,8 @@ export function saveOrUpdateLead(lead) {
       UPDATE leads SET
         businessPhone = COALESCE(businessPhone, ?),
         normalizedPhone = COALESCE(normalizedPhone, ?),
-        whatsappNumber = COALESCE(whatsappNumber, ?),
-        hasWhatsApp = CASE WHEN hasWhatsApp = 1 THEN 1 ELSE ? END,
+        whatsappNumber = ?,
+        hasWhatsApp = ?,
         businessEmail = COALESCE(businessEmail, ?),
         normalizedEmail = COALESCE(normalizedEmail, ?),
         website = COALESCE(website, ?),
@@ -576,10 +636,10 @@ export function saveOrUpdateLead(lead) {
     `);
 
     updateStmt.run(
-      lead.businessPhone || null,
+      businessPhoneClean,
       normalizedPhone,
-      lead.whatsappNumber || null,
-      lead.hasWhatsApp ? 1 : 0,
+      verifiedWhatsApp,
+      hasWhatsApp,
       lead.businessEmail || null,
       normalizedEmail,
       lead.website || null,
@@ -625,10 +685,10 @@ export function saveOrUpdateLead(lead) {
       lead.managerName || null,
       lead.businessEmail || null,
       normalizedEmail,
-      lead.whatsappNumber || null,
-      lead.businessPhone || null,
+      verifiedWhatsApp,
+      businessPhoneClean,
       normalizedPhone,
-      lead.hasWhatsApp ? 1 : 0,
+      hasWhatsApp,
       lead.website || null,
       domain,
       lead.fullAddress || `${city}, ${country}`,
@@ -1229,8 +1289,7 @@ export function getOutreachCampaignById(id) {
  */
 export function getEligibleLeadsForOutreach({ country = '', city = '', category = '', minScore = 30, limit = 50 } = {}) {
   let whereClauses = [
-    "(hasWhatsApp = 1 OR normalizedPhone IS NOT NULL)",
-    "normalizedPhone IS NOT NULL AND normalizedPhone != ''",
+    "hasWhatsApp = 1 AND whatsappNumber IS NOT NULL AND whatsappNumber != ''",
     "status NOT IN ('Unsubscribed', 'Not Interested', 'Converted')",
     'leadScore >= ?'
   ];

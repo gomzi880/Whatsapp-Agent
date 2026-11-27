@@ -2,6 +2,7 @@
  * OpenStreetMap & Nominatim Global Gym Discovery Source
  * 100% Legal, authorized, public global directory of registered fitness facilities.
  */
+import { isMobileNumber, formatMobileForWhatsApp } from '../../database/db.js';
 
 /**
  * Searches fitness centres and gyms in a specified city/country
@@ -192,15 +193,19 @@ export async function searchGymsFromOSM({ country = 'India', state = '', city = 
       detectedCategory = 'Gym';
     }
 
-    results.push({
-      gymName: name.trim(),
-      ownerName: tags.operator || tags.owner || null,
-      founderName: tags.founder || null,
-      managerName: tags.manager || null,
-      businessEmail: email ? email.trim() : null,
-      whatsappNumber: tags['contact:whatsapp'] || (phone.startsWith('+') ? phone : null),
-      businessPhone: phone ? phone.trim() : null,
-      hasWhatsApp: Boolean(tags['contact:whatsapp']),
+      const candidatePhone = tags['contact:whatsapp'] || tags['contact:mobile'] || phone;
+      const isMobile = isMobileNumber(candidatePhone, queryCountry);
+      const verifiedWhatsApp = isMobile ? formatMobileForWhatsApp(candidatePhone, queryCountry) : null;
+
+      results.push({
+        gymName: name.trim(),
+        ownerName: tags.operator || tags.owner || null,
+        founderName: tags.founder || null,
+        managerName: tags.manager || null,
+        businessEmail: email ? email.trim() : null,
+        whatsappNumber: verifiedWhatsApp,
+        businessPhone: phone ? phone.trim() : null,
+        hasWhatsApp: isMobile ? 1 : 0,
       website: website ? website.trim() : null,
       fullAddress: fullAddress || elem.display_name || `${queryCity}, ${queryCountry}`,
       city: queryCity,

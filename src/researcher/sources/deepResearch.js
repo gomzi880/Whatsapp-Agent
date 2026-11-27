@@ -5,6 +5,7 @@
  */
 import { GoogleGenAI } from '@google/genai';
 import { config } from '../../../config.js';
+import { isMobileNumber, formatMobileForWhatsApp } from '../../database/db.js';
 
 let genAIClient = null;
 
@@ -45,7 +46,7 @@ Research Requirements:
 1. Cover major neighborhoods, commercial hubs, high streets, and residential localities across ${city}.
 2. Provide authentic local gyms and well-known fitness centres operating in ${city}.
 3. The "gymCategory" field MUST be strictly either "Gym" or "Fitness Centre" (no other categories).
-4. Provide realistic or verified contact phone numbers, street/locality addresses, and website domains if available.
+4. CRITICAL MOBILE RULE: For WhatsApp outreach, capture ONLY direct 10-digit MOBILE numbers (in India, starting with 6, 7, 8, or 9 like +919827012345, +919425023456). DO NOT provide fixed landlines with city/STD codes (e.g. 0755 for Bhopal, 0731 for Indore, 011 for Delhi, 022 for Mumbai, 080 for Bangalore) because landlines CANNOT receive WhatsApp messages.
 5. If owner/founder name is known, provide it; otherwise provide null.
 
 Return ONLY a valid JSON array of objects with the exact schema:
@@ -54,7 +55,7 @@ Return ONLY a valid JSON array of objects with the exact schema:
     "gymName": "Business Name",
     "ownerName": "Contact or Owner Name or null",
     "businessEmail": "contact@... or null",
-    "businessPhone": "+91XXXXXXXXXX or +1XXXXXXXXXX (10-12 digit phone)",
+    "businessPhone": "+91XXXXXXXXXX (Direct 10-digit Mobile Phone)",
     "hasWhatsApp": 1,
     "website": "https://... or null",
     "fullAddress": "Specific Locality, Street, ${city}, ${state || ''}",
@@ -93,15 +94,20 @@ Return ONLY a valid JSON array of objects with the exact schema:
         ? 'Fitness Centre'
         : 'Gym';
 
+      const rawCandidate = item.mobileNumber || item.businessPhone ? String(item.mobileNumber || item.businessPhone).trim() : null;
+      const isMobile = isMobileNumber(rawCandidate, country);
+      const verifiedWhatsApp = isMobile ? formatMobileForWhatsApp(rawCandidate, country) : null;
+      const verifiedBusinessPhone = rawCandidate ? (rawCandidate.startsWith('+') ? rawCandidate : (rawCandidate.replace(/[^0-9]/g, '').length === 10 ? `+91${rawCandidate.replace(/[^0-9]/g, '')}` : rawCandidate)) : null;
+
       sanitized.push({
         gymName: String(item.gymName).trim(),
         ownerName: item.ownerName ? String(item.ownerName).trim() : null,
         founderName: null,
         managerName: null,
         businessEmail: item.businessEmail ? String(item.businessEmail).trim() : null,
-        businessPhone: item.businessPhone ? String(item.businessPhone).trim() : null,
-        whatsappNumber: item.businessPhone ? String(item.businessPhone).trim() : null,
-        hasWhatsApp: 1,
+        businessPhone: verifiedBusinessPhone,
+        whatsappNumber: verifiedWhatsApp,
+        hasWhatsApp: isMobile ? 1 : 0,
         website: item.website ? String(item.website).trim() : null,
         fullAddress: item.fullAddress ? String(item.fullAddress).trim() : `${city}, ${country}`,
         city,
@@ -110,7 +116,7 @@ Return ONLY a valid JSON array of objects with the exact schema:
         gymCategory: finalCat,
         branchesCount: Number(item.branchesCount) || 1,
         sourceName: 'AI Deep Web Intelligence',
-        confidenceLevel: item.businessPhone ? 'High' : 'Medium'
+        confidenceLevel: verifiedWhatsApp ? 'High' : (verifiedBusinessPhone ? 'Medium' : 'Low')
       });
     }
 

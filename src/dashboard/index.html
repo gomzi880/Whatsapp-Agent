@@ -2924,7 +2924,7 @@
 
           const waBtn = l.whatsappNumber ? 
             `<a href="https://wa.me/${l.whatsappNumber.replace(/[^0-9]/g, '')}" target="_blank" class="inline-flex items-center text-green-600 hover:text-green-700 font-semibold"><i class="fa-brands fa-whatsapp mr-1 text-sm"></i>${l.whatsappNumber.startsWith('+') ? l.whatsappNumber : '+' + l.whatsappNumber}</a>` : 
-            (l.businessPhone ? `<span class="text-slate-600">${l.businessPhone}</span>` : `<span class="text-slate-300">-</span>`);
+            (l.businessPhone ? `<span class="text-slate-500 text-xs inline-flex items-center" title="Fixed Landline (No WhatsApp)"><i class="fa-solid fa-phone mr-1.5 text-slate-400"></i>${l.businessPhone}</span>` : `<span class="text-slate-300">-</span>`);
 
           const emailItem = l.businessEmail ? 
             `<a href="mailto:${l.businessEmail}" class="text-blue-600 hover:underline truncate max-w-[130px] block">${l.businessEmail}</a>` : 

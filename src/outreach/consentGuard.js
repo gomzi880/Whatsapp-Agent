@@ -10,7 +10,8 @@ import db, {
   updateLeadStatus,
   cancelPendingFollowUpsForLead,
   logAuditAction,
-  getAdminSettings
+  getAdminSettings,
+  isMobileNumber
 } from '../database/db.js';
 
 /**
@@ -35,9 +36,9 @@ export function isEligibleForOutreach(leadOrId, channel = 'whatsapp') {
 
   // 2. Channel validity check
   if (channel === 'whatsapp') {
-    const phone = lead.whatsappNumber || lead.businessPhone || lead.normalizedPhone;
+    const phone = lead.whatsappNumber || (isMobileNumber(lead.businessPhone, lead.country) ? lead.businessPhone : null);
     if (!phone) {
-      return { eligible: false, reason: 'No valid phone or WhatsApp number available' };
+      return { eligible: false, reason: 'No valid mobile phone number available for WhatsApp (landlines not supported)' };
     }
   } else if (channel === 'email') {
     const email = lead.businessEmail || lead.normalizedEmail;
