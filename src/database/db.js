@@ -1321,6 +1321,32 @@ export function getLeadEmails(leadId, limit = 50) {
   `).all(leadId, limit);
 }
 
+/**
+ * Retrieves a synchronized omnichannel timeline for a lead combining
+ * both WhatsApp messages and Email communications. (Phase 12)
+ */
+export function getUnifiedLeadTimeline(leadId) {
+  const lead = getLeadById(leadId);
+  if (!lead) return [];
+
+  const waMsgs = db.prepare(`
+    SELECT id, 'whatsapp' as channel, senderRole as role, messageText as text, status, intent, createdAt as timestamp
+    FROM lead_messages
+    WHERE leadId = ?
+  `).all(leadId);
+
+  const emailMsgs = db.prepare(`
+    SELECT id, 'email' as channel, CASE WHEN direction = 'inbound' THEN 'prospect' ELSE 'system' END as role,
+           subject, COALESCE(bodyText, bodyHtml) as text, status, intent, createdAt as timestamp
+    FROM lead_emails
+    WHERE leadId = ?
+  `).all(leadId);
+
+  const unified = [...waMsgs, ...emailMsgs];
+  unified.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  return unified;
+}
+
 export function getAllEmails(filters = {}, limit = 50, offset = 0) {
   const whereClauses = [];
   const params = [];
@@ -2344,6 +2370,7 @@ export function getSalesAnalyticsData() {
     stateWiseLeads,
     cityWiseLeads,
     categoryLeads,
+    categoryDistribution: categoryLeads,
     outreachPerformance: {
       waSent,
       waReplies,
@@ -2356,7 +2383,8 @@ export function getSalesAnalyticsData() {
     emailResponseRate,
     interestConversionRate,
     meetingConversionRate,
-    countryWiseSalesPerformance
+    countryWiseSalesPerformance,
+    countrySalesPerformance: countryWiseSalesPerformance
   };
 }
 
@@ -2541,7 +2569,8 @@ Object.assign(db, {
   getTodaysNewLeadsCount,
   createFreeTrialSubscription,
   getFreeTrialSubscriptions,
-  updateFreeTrialSubscription
+  updateFreeTrialSubscription,
+  getUnifiedLeadTimeline
 });
 
 // Automatically seed on initialization if empty

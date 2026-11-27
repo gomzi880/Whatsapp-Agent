@@ -1,108 +1,106 @@
 /**
- * Process Lock & Cross-Process Mutex Utility (Phase 11)
+ * Multi-Process Mutex Lock & Concurrency Guard (Phase 11)
  * 
- * Prevents race conditions, double-dispatches, and concurrent job collisions
- * across background schedulers and asynchronous worker processes.
+ * Prevents race conditions and double-dispatching by ensuring only one
+ * primary automation runner or scheduler daemon holds the active lock.
+ * Supports automatic recovery from stale locks (>1 hour old or dead PID).
  */
 
 import fs from 'fs';
 import path from 'path';
 
-const LOCKS_DIR = path.resolve('./.locks');
+const LOCK_FILE = path.resolve('.process.lock');
+const DEFAULT_TIMEOUT_MS = 60 * 60 * 1000; // 1 hour stale lock expiry
 
-// Ensure locks directory exists
-if (!fs.existsSync(LOCKS_DIR)) {
+/**
+ * Checks if a process ID is currently running on the operating system
+ */
+function isPidRunning(pid) {
   try {
-    fs.mkdirSync(LOCKS_DIR, { recursive: true });
+    process.kill(pid, 0);
+    return true;
   } catch (e) {
-    // Directory might already exist
+    return false;
   }
 }
 
 /**
- * Attempts to acquire an atomic lock for a given named operation
- * @param {string} lockName Name of the lock (e.g. 'outreach_scheduler', 'research_job')
- * @param {number} ttlSeconds Time-to-live before considering a lock stale (default: 1800s / 30m)
- * @returns {object} { acquired: boolean, lockPath: string, reason?: string }
+ * Attempts to acquire an exclusive lock
+ * @param {string} processName
+ * @returns {object} { acquired: boolean, lockInfo: object }
  */
-export function acquireLock(lockName, ttlSeconds = 1800) {
-  const safeName = lockName.replace(/[^a-zA-Z0-9_-]/g, '_');
-  const lockPath = path.join(LOCKS_DIR, `${safeName}.lock`);
+export function acquireProcessLock(processName = 'MasterDaemon') {
   const now = Date.now();
 
-  if (fs.existsSync(lockPath)) {
+  if (fs.existsSync(LOCK_FILE)) {
     try {
-      const data = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
-      const ageSeconds = (now - data.timestamp) / 1000;
+      const raw = fs.readFileSync(LOCK_FILE, 'utf-8');
+      const lockData = JSON.parse(raw);
 
-      if (ageSeconds < (data.ttlSeconds || ttlSeconds)) {
+      // Check if stale by timeout
+      const isStale = (now - lockData.timestamp) > DEFAULT_TIMEOUT_MS;
+      // Check if PID is still alive
+      const isAlive = lockData.pid ? isPidRunning(lockData.pid) : false;
+
+      if (!isStale && isAlive && lockData.pid !== process.pid) {
         return {
           acquired: false,
-          lockPath,
-          reason: `Lock '${lockName}' is currently held by PID ${data.pid} (acquired ${Math.round(ageSeconds)}s ago)`
+          reason: `Lock held by process ${lockData.processName} (PID ${lockData.pid})`,
+          lockInfo: lockData
         };
       } else {
-        // Stale lock detected, override
-        console.warn(`⚠️ [ProcessLock] Overriding stale lock '${lockName}' (Age: ${Math.round(ageSeconds)}s > TTL: ${ttlSeconds}s)`);
+        console.log(`⚠️ [Process Lock] Reclaiming stale or terminated lock (PID ${lockData.pid}).`);
       }
     } catch (e) {
-      // Corrupt lock file, safe to overwrite
+      // Corrupt lock file, overwrite
     }
   }
 
-  const payload = {
-    lockName,
+  const newLockData = {
+    processName,
     pid: process.pid,
     timestamp: now,
-    ttlSeconds,
     acquiredAt: new Date().toISOString()
   };
 
   try {
-    fs.writeFileSync(lockPath, JSON.stringify(payload, null, 2), { flag: 'w' });
-    return { acquired: true, lockPath };
+    fs.writeFileSync(LOCK_FILE, JSON.stringify(newLockData, null, 2), 'utf-8');
+    return { acquired: true, lockInfo: newLockData };
   } catch (err) {
-    return { acquired: false, lockPath, reason: err.message };
+    return { acquired: false, reason: err.message };
   }
 }
 
 /**
- * Releases an acquired lock
- * @param {string} lockName 
+ * Releases the acquired process lock
  */
-export function releaseLock(lockName) {
-  const safeName = lockName.replace(/[^a-zA-Z0-9_-]/g, '_');
-  const lockPath = path.join(LOCKS_DIR, `${safeName}.lock`);
-
-  if (fs.existsSync(lockPath)) {
+export function releaseProcessLock() {
+  if (fs.existsSync(LOCK_FILE)) {
     try {
-      fs.unlinkSync(lockPath);
-      return true;
-    } catch (err) {
-      console.warn(`[ProcessLock] Warning releasing lock '${lockName}':`, err.message);
-      return false;
+      const raw = fs.readFileSync(LOCK_FILE, 'utf-8');
+      const lockData = JSON.parse(raw);
+      if (lockData.pid === process.pid) {
+        fs.unlinkSync(LOCK_FILE);
+        return true;
+      }
+    } catch (e) {
+      try { fs.unlinkSync(LOCK_FILE); return true; } catch (err) {}
     }
   }
   return false;
 }
 
 /**
- * Executes an asynchronous function safely with an exclusive mutex lock
- * @param {string} lockName 
- * @param {Function} asyncFn 
- * @param {number} ttlSeconds 
+ * Clean up lock file automatically on process exit
  */
-export async function withLock(lockName, asyncFn, ttlSeconds = 1800) {
-  const lock = acquireLock(lockName, ttlSeconds);
-  if (!lock.acquired) {
-    console.log(`🔒 [ProcessLock] Operation '${lockName}' skipped: ${lock.reason}`);
-    return { executed: false, reason: lock.reason };
-  }
-
-  try {
-    const result = await asyncFn();
-    return { executed: true, result };
-  } finally {
-    releaseLock(lockName);
-  }
-}
+process.on('exit', () => {
+  releaseProcessLock();
+});
+process.on('SIGINT', () => {
+  releaseProcessLock();
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
+  releaseProcessLock();
+  process.exit(0);
+});

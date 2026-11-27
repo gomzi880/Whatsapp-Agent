@@ -51,8 +51,19 @@ import db, {
   getExecutiveDashboardStats,
   getSalesAnalyticsData,
   getAdminSettings,
-  updateAdminSettings
+  updateAdminSettings,
+  getUnifiedLeadTimeline
 } from '../database/db.js';
+import {
+  isEmergencyStopActive,
+  triggerEmergencyStop,
+  resumeFromEmergencyStop
+} from './emergencyKillSwitch.js';
+import {
+  enrollInFreeTrial,
+  convertTrialToPaidCustomer,
+  getTrialDashboardStats
+} from '../trial/trialTrackerService.js';
 import {
   generateFeedbackMessage,
   classifyFeedbackResponse,
@@ -1550,6 +1561,70 @@ app.post('/api/dashboard/settings', (req, res) => {
     const settings = req.body;
     const updated = updateAdminSettings(settings, 'administrator');
     res.json({ success: true, settings: updated });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 74. Global Emergency Stop Kill-Switch Endpoints (Phase 10)
+app.get('/api/admin/emergency-status', (req, res) => {
+  res.json({ success: true, emergencyStopActive: isEmergencyStopActive() });
+});
+
+app.post('/api/admin/emergency-stop', (req, res) => {
+  try {
+    const { reason = 'Emergency stop triggered by admin' } = req.body;
+    const result = triggerEmergencyStop({ reason, initiatedBy: 'administrator' });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/emergency-resume', (req, res) => {
+  try {
+    const result = resumeFromEmergencyStop({ resumedBy: 'administrator' });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 75. Unified CRM Lead Timeline Endpoint (Phase 12)
+app.get('/api/leads/:id/timeline', (req, res) => {
+  try {
+    const leadId = parseInt(req.params.id, 10);
+    const timeline = getUnifiedLeadTimeline(leadId);
+    res.json({ success: true, leadId, count: timeline.length, timeline });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 76. 30-Day Free Trial Management Endpoints (Phase 6)
+app.get('/api/trials', (req, res) => {
+  try {
+    const stats = getTrialDashboardStats();
+    res.json({ success: true, stats });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/trials/enroll', (req, res) => {
+  try {
+    const subscription = enrollInFreeTrial(req.body);
+    res.json({ success: true, subscription });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/trials/:id/convert', (req, res) => {
+  try {
+    const subscriptionId = parseInt(req.params.id, 10);
+    const result = convertTrialToPaidCustomer({ subscriptionId, ...req.body });
+    res.json({ success: true, ...result });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
