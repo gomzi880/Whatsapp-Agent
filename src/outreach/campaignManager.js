@@ -108,23 +108,29 @@ export function detectProspectIntent(text) {
  * Processes an incoming reply from a lead, updates status and records the interaction
  */
 export async function processProspectReply(remoteJid, messageText) {
-  const phone = remoteJid.replace('@s.whatsapp.net', '').replace('@c.us', '');
-  const lead = findLeadByPhoneOrJid(phone);
+  const cleanJid = remoteJid || '';
+  const phone = cleanJid.replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '');
+  const lead = findLeadByPhoneOrJid(cleanJid);
   const intent = detectProspectIntent(messageText);
 
-  console.log(`🧠 [Conversation Intelligence] Contact: ${remoteJid} | Detected Intent: "${intent}" | Lead: ${lead ? lead.gymName : 'Unregistered'}`);
+  console.log(`🧠 [Conversation Intelligence] Contact: ${remoteJid} | Detected Intent: "${intent}" | Lead: ${lead ? lead.gymName : 'Direct WhatsApp Contact'}`);
 
   let updatedStatus = null;
   let haltOutreach = false;
   let optOutAckMessage = null;
+
+  if (intent === 'opt_out') {
+    haltOutreach = true;
+    optOutAckMessage = lead 
+      ? `Understood! I have removed ${lead.gymName} from our outreach list and won't message you again. Wishing you continued success!`
+      : `Understood! I have removed your number from our contact list and won't message you again. Wishing you continued success!`;
+  }
 
   if (lead) {
     // Determine appropriate lifecycle status update
     switch (intent) {
       case 'opt_out':
         updatedStatus = 'Unsubscribed';
-        haltOutreach = true;
-        optOutAckMessage = `Understood! I have removed ${lead.gymName} from our outreach list and won't message you again. Wishing you continued success!`;
         break;
       case 'demo_requested':
         updatedStatus = 'Meeting Requested';
@@ -149,32 +155,32 @@ export async function processProspectReply(remoteJid, messageText) {
       updateLeadStatus(lead.id, updatedStatus, `Prospect replied: "${messageText.slice(0, 50)}" [Intent: ${intent}]`);
       console.log(`📌 Lead #${lead.id} (${lead.gymName}) status advanced to -> "${updatedStatus}"`);
     }
+  }
 
-    // Record incoming message in database
-    recordLeadMessage({
-      leadId: lead.id,
-      remoteJid,
-      senderRole: 'prospect',
-      messageText,
-      status: 'received',
-      intent
-    });
+  // Record incoming message in database ALWAYS (for BOTH registered leads AND direct WhatsApp contacts)
+  recordLeadMessage({
+    leadId: lead ? lead.id : null,
+    remoteJid,
+    senderRole: 'prospect',
+    messageText,
+    status: 'received',
+    intent
+  });
 
-    // If opted out, send courteous acknowledgment immediately and do not generate sales pitch
-    if (haltOutreach && optOutAckMessage) {
-      try {
-        await sendWhatsAppMessage(remoteJid, optOutAckMessage);
-        recordLeadMessage({
-          leadId: lead.id,
-          remoteJid,
-          senderRole: 'agent',
-          messageText: optOutAckMessage,
-          status: 'sent',
-          intent: 'opt_out_ack'
-        });
-      } catch (err) {
-        console.warn('Failed to send opt-out acknowledgment:', err.message);
-      }
+  // If opted out, send courteous acknowledgment immediately and do not generate sales pitch
+  if (haltOutreach && optOutAckMessage) {
+    try {
+      await sendWhatsAppMessage(remoteJid, optOutAckMessage);
+      recordLeadMessage({
+        leadId: lead ? lead.id : null,
+        remoteJid,
+        senderRole: 'agent',
+        messageText: optOutAckMessage,
+        status: 'sent',
+        intent: 'opt_out_ack'
+      });
+    } catch (err) {
+      console.warn('Failed to send opt-out acknowledgment:', err.message);
     }
   }
 

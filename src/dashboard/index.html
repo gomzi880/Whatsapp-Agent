@@ -1110,6 +1110,9 @@
           <div>
             <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center">
               <i class="fa-solid fa-comments text-indigo-600 mr-2"></i> Live Message &amp; Reply Feed
+              <span class="ml-2.5 inline-flex items-center text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1"></span> Live Sync (3s)
+              </span>
             </h4>
             <p class="text-[11px] text-slate-500">Real-time prospect replies, automated responses, intent classifications and opt-outs</p>
           </div>
@@ -1134,10 +1137,11 @@
                 <th class="px-4 py-2.5">Message Content</th>
                 <th class="px-4 py-2.5 text-center">Intent</th>
                 <th class="px-4 py-2.5 text-right">Time</th>
+                <th class="px-4 py-2.5 text-center">Full Chat</th>
               </tr>
             </thead>
             <tbody id="messages-table-body" class="divide-y divide-slate-100 font-medium">
-              <tr><td colspan="6" class="text-center py-8 text-slate-400">Loading live message logs...</td></tr>
+              <tr><td colspan="7" class="text-center py-8 text-slate-400">Loading live message logs...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1913,6 +1917,73 @@
   </div>
 
   <!-- ======================================================== -->
+  <!-- MODAL: WHATSAPP LIVE CONVERSATION VIEWER (FULL CHAT)     -->
+  <!-- ======================================================== -->
+  <div id="whatsapp-chat-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 hidden flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-[#efeae2] rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col h-[88vh] max-h-[740px] overflow-hidden border border-slate-300">
+      
+      <!-- WhatsApp Dark Green Header -->
+      <div class="bg-[#008069] text-white px-4 py-3 flex items-center justify-between shadow-md">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-full bg-emerald-800 text-white flex items-center justify-center font-bold text-sm shadow-inner border border-emerald-600/50">
+            <span id="wa-chat-avatar"><i class="fa-solid fa-user"></i></span>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h3 id="wa-chat-title" class="text-sm font-bold text-white tracking-wide truncate max-w-[200px] sm:max-w-xs">Direct WhatsApp Contact</h3>
+              <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-800/80 text-emerald-100 border border-emerald-600/40">WhatsApp</span>
+            </div>
+            <div class="flex items-center space-x-2 text-[11px] text-emerald-100/90 mt-0.5">
+              <span id="wa-chat-phone" class="font-mono font-medium">+107842367418506</span>
+              <span>•</span>
+              <span class="inline-flex items-center text-emerald-200">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 mr-1 animate-pulse"></span> Live Sync (3s)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <a id="wa-chat-external-btn" href="#" target="_blank" class="px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold flex items-center shadow-xs transition" title="Open in WhatsApp Web">
+            <i class="fa-brands fa-whatsapp text-sm mr-1.5 text-green-300"></i> Open App
+          </a>
+          <button onclick="refreshActiveChatModal()" class="w-8 h-8 rounded-lg bg-emerald-700/80 hover:bg-emerald-800 text-white flex items-center justify-center text-xs transition" title="Refresh conversation">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+          <button onclick="closeWhatsAppChatModal()" class="w-8 h-8 rounded-lg bg-emerald-800/80 hover:bg-emerald-900 text-white flex items-center justify-center text-sm transition">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- WhatsApp Wallpaper Chat Body -->
+      <div id="wa-chat-body" class="flex-1 overflow-y-auto p-4 space-y-3" style="background-color: #efeae2; background-image: radial-gradient(#d3cbbe 1px, transparent 1px); background-size: 16px 16px;">
+        <div id="wa-chat-bubbles" class="space-y-3">
+          <div class="text-center py-10 text-slate-400 text-xs">
+            <i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Loading conversation history...
+          </div>
+        </div>
+      </div>
+
+      <!-- WhatsApp Modal Footer Info / Status -->
+      <div class="bg-[#f0f2f5] border-t border-slate-300/80 px-4 py-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-slate-600 gap-2">
+        <div class="flex items-center space-x-2">
+          <span class="inline-flex items-center text-[10px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded border border-emerald-300">
+            <i class="fa-solid fa-robot mr-1 text-emerald-600"></i> AI Agent Active
+          </span>
+          <span class="text-[11px] text-slate-500">
+            Updates every 3 seconds automatically.
+          </span>
+        </div>
+        <div class="text-[11px] text-slate-500">
+          Operator control: Send <code class="bg-slate-200 text-slate-800 px-1 py-0.5 rounded text-[10px] font-mono">#takeover</code> on WhatsApp to pause AI.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
   <!-- MODAL 7: CREATE EMAIL OUTREACH CAMPAIGN                  -->
   <!-- ======================================================== -->
   <div id="email-campaign-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -2434,6 +2505,7 @@
       await loadFeedbacks();
       await loadFollowUps();
       await loadHighValueProspects();
+      startLiveOutreachPolling();
     });
 
     function switchTab(tab) {
@@ -2490,6 +2562,11 @@
 
       if (tab === 'overview') {
         loadExecutiveDashboard();
+      }
+      if (tab === 'outreach') {
+        loadOutreachStats();
+        loadCampaigns();
+        loadOutreachMessages();
       }
       if (tab === 'email') {
         loadEmailStats();
@@ -3438,6 +3515,165 @@
       }
     }
 
+    // ========================================================
+    // WHATSAPP LIVE CONVERSATION VIEWER & 3-SECOND AUTO-POLL
+    // ========================================================
+    let activeChatModalJid = null;
+    let chatModalTimer = null;
+    let liveOutreachTimer = null;
+
+    function startLiveOutreachPolling() {
+      if (liveOutreachTimer) clearInterval(liveOutreachTimer);
+      liveOutreachTimer = setInterval(() => {
+        const outreachTab = document.getElementById('tab-outreach');
+        if (outreachTab && !outreachTab.classList.contains('hidden')) {
+          loadOutreachMessages();
+        }
+      }, 3000);
+    }
+
+    async function openWhatsAppChatModal(remoteJid, gymName, phoneDigits) {
+      activeChatModalJid = remoteJid;
+      const modal = document.getElementById('whatsapp-chat-modal');
+      const titleEl = document.getElementById('wa-chat-title');
+      const phoneEl = document.getElementById('wa-chat-phone');
+      const externalBtn = document.getElementById('wa-chat-external-btn');
+      const avatarEl = document.getElementById('wa-chat-avatar');
+
+      titleEl.innerText = gymName || 'Direct WhatsApp Contact';
+      phoneEl.innerText = phoneDigits ? `+${phoneDigits}` : (remoteJid || '');
+      if (externalBtn) {
+        externalBtn.href = phoneDigits ? `https://wa.me/${phoneDigits}` : '#';
+      }
+
+      const initial = (gymName && gymName !== 'Direct WhatsApp Contact') ? gymName.charAt(0).toUpperCase() : '👤';
+      avatarEl.innerHTML = initial;
+
+      modal.classList.remove('hidden');
+
+      // Initial load with auto-scroll to latest message
+      await loadChatModalMessages(remoteJid, true);
+
+      // Start 3-second live polling for active chat modal
+      if (chatModalTimer) clearInterval(chatModalTimer);
+      chatModalTimer = setInterval(() => {
+        if (activeChatModalJid && !modal.classList.contains('hidden')) {
+          loadChatModalMessages(activeChatModalJid, false);
+        }
+      }, 3000);
+    }
+
+    function refreshActiveChatModal() {
+      if (activeChatModalJid) {
+        loadChatModalMessages(activeChatModalJid, true);
+      }
+    }
+
+    function closeWhatsAppChatModal() {
+      activeChatModalJid = null;
+      if (chatModalTimer) {
+        clearInterval(chatModalTimer);
+        chatModalTimer = null;
+      }
+      document.getElementById('whatsapp-chat-modal').classList.add('hidden');
+    }
+
+    async function loadChatModalMessages(remoteJid, scrollToBottom = false) {
+      if (!remoteJid) return;
+      try {
+        const res = await fetch(`/api/outreach/messages?remoteJid=${encodeURIComponent(remoteJid)}&order=asc&limit=100`);
+        const data = await res.json();
+        const container = document.getElementById('wa-chat-bubbles');
+        const scrollBody = document.getElementById('wa-chat-body');
+
+        if (!data.success || !data.messages || data.messages.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-12 text-slate-500">
+              <div class="w-12 h-12 rounded-full bg-white text-slate-400 mx-auto flex items-center justify-center text-xl mb-2 shadow-xs">
+                <i class="fa-solid fa-comments"></i>
+              </div>
+              <p class="font-bold text-xs text-slate-700">No message history yet</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Incoming and outgoing messages for this contact will appear here in real time.</p>
+            </div>
+          `;
+          return;
+        }
+
+        // Render WhatsApp-style speech bubbles
+        let html = '';
+        let lastDate = '';
+
+        data.messages.forEach(m => {
+          const isAgent = m.senderRole === 'agent' || m.senderRole === 'assistant' || m.senderRole === 'system';
+          const msgDate = m.createdAt ? m.createdAt.split(' ')[0] : '';
+          const msgTime = m.createdAt ? (m.createdAt.split(' ')[1] || m.createdAt) : '';
+
+          // Date chip separator
+          if (msgDate && msgDate !== lastDate) {
+            lastDate = msgDate;
+            html += `
+              <div class="flex justify-center my-2">
+                <span class="bg-white/90 text-slate-600 text-[10px] font-semibold px-3 py-0.5 rounded-lg shadow-xs border border-slate-200/60 uppercase tracking-wider">
+                  ${msgDate}
+                </span>
+              </div>
+            `;
+          }
+
+          if (isAgent) {
+            // Outgoing Agent Message (Light Green Bubble on Right)
+            html += `
+              <div class="flex justify-end items-end gap-1.5 max-w-[85%] ml-auto">
+                <div class="bg-[#d9fdd3] text-slate-900 px-3.5 py-2 rounded-2xl rounded-tr-xs shadow-xs text-xs border border-emerald-200/60 relative">
+                  <div class="text-[10px] font-bold text-emerald-800 mb-0.5 flex items-center justify-between gap-3">
+                    <span class="flex items-center"><i class="fa-solid fa-robot mr-1 text-[9px] text-emerald-600"></i> GymStack AI</span>
+                    ${m.intent ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-200/70 text-emerald-900 font-semibold uppercase tracking-wider">${m.intent}</span>` : ''}
+                  </div>
+                  <div class="leading-relaxed whitespace-pre-wrap select-text text-slate-800">${escapeHtml(m.messageText)}</div>
+                  <div class="flex items-center justify-end gap-1 text-[9px] text-slate-500 mt-1 font-mono">
+                    <span>${msgTime}</span>
+                    <i class="fa-solid fa-check-double text-[#53bdeb] text-[10px]" title="Delivered &amp; Read"></i>
+                  </div>
+                </div>
+              </div>
+            `;
+          } else {
+            // Incoming Prospect Message (White Bubble on Left)
+            html += `
+              <div class="flex justify-start items-end gap-1.5 max-w-[85%] mr-auto">
+                <div class="bg-white text-slate-900 px-3.5 py-2 rounded-2xl rounded-tl-xs shadow-xs text-xs border border-slate-200/80 relative">
+                  <div class="text-[10px] font-bold text-emerald-700 mb-0.5 flex items-center justify-between gap-3">
+                    <span class="flex items-center"><i class="fa-solid fa-user mr-1 text-[9px]"></i> Prospect</span>
+                    ${m.intent ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-medium">${m.intent}</span>` : ''}
+                  </div>
+                  <div class="leading-relaxed whitespace-pre-wrap select-text text-slate-800">${escapeHtml(m.messageText)}</div>
+                  <div class="text-[9px] text-slate-400 text-right mt-1 font-mono">${msgTime}</div>
+                </div>
+              </div>
+            `;
+          }
+        });
+
+        container.innerHTML = html;
+
+        if (scrollToBottom && scrollBody) {
+          scrollBody.scrollTop = scrollBody.scrollHeight;
+        }
+      } catch (err) {
+        console.error('Error loading chat messages:', err);
+      }
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     async function loadOutreachMessages() {
       const params = new URLSearchParams({ limit: 50 });
       if (currentMessageRoleFilter) params.append('role', currentMessageRoleFilter);
@@ -3450,12 +3686,12 @@
           const tbody = document.getElementById('messages-table-body');
           tbody.innerHTML = '';
           if (data.messages.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-400">No messages match the current filter.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6 text-slate-400">No messages match the current filter.</td></tr>';
             return;
           }
 
           data.messages.forEach(m => {
-            const isAgent = m.senderRole === 'agent';
+            const isAgent = m.senderRole === 'agent' || m.senderRole === 'assistant' || m.senderRole === 'system';
             const roleBadge = isAgent
               ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800"><i class="fa-solid fa-robot mr-1"></i>Agent</span>'
               : '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-800"><i class="fa-solid fa-user mr-1"></i>Prospect</span>';
@@ -3467,6 +3703,8 @@
             if (m.intent === 'pricing') intentBadge = 'bg-amber-100 text-amber-800';
 
             const phoneDigits = m.remoteJid ? m.remoteJid.replace(/[^0-9]/g, '') : '';
+            const safeGymName = (m.gymName || 'Direct WhatsApp Contact').replace(/'/g, "\\'");
+            const safeJid = (m.remoteJid || '').replace(/'/g, "\\'");
 
             tbody.innerHTML += `
               <tr class="hover:bg-slate-50/80 transition-colors">
@@ -3478,13 +3716,18 @@
                 </td>
                 <td class="px-4 py-2.5">${roleBadge}</td>
                 <td class="px-4 py-2.5 max-w-sm">
-                  <div class="line-clamp-2 text-slate-700 text-xs font-normal" title="${m.messageText}">${m.messageText}</div>
+                  <div class="line-clamp-2 text-slate-700 text-xs font-normal" title="${escapeHtml(m.messageText)}">${escapeHtml(m.messageText)}</div>
                 </td>
                 <td class="px-4 py-2.5 text-center">
                   <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${intentBadge}">${m.intent || 'general'}</span>
                 </td>
                 <td class="px-4 py-2.5 text-right text-slate-400 text-[11px] whitespace-nowrap">
                   ${m.createdAt ? m.createdAt.split(' ')[1] || m.createdAt : '-'}
+                </td>
+                <td class="px-4 py-2.5 text-center whitespace-nowrap">
+                  <button onclick="openWhatsAppChatModal('${safeJid}', '${safeGymName}', '${phoneDigits}')" class="inline-flex items-center px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200 transition-all shadow-xs cursor-pointer">
+                    <i class="fa-brands fa-whatsapp text-sm mr-1 text-emerald-600"></i> View Chat
+                  </button>
                 </td>
               </tr>
             `;

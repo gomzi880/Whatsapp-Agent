@@ -1026,7 +1026,7 @@ export function recordLeadMessage({ leadId = null, campaignId = null, remoteJid,
 /**
  * Fetch messages with filters and pagination
  */
-export function getLeadMessages({ leadId, campaignId, remoteJid, role, intent, limit = 50, offset = 0 } = {}) {
+export function getLeadMessages({ leadId, campaignId, remoteJid, role, intent, order = 'desc', limit = 50, offset = 0 } = {}) {
   let whereClauses = [];
   let params = [];
 
@@ -1039,8 +1039,14 @@ export function getLeadMessages({ leadId, campaignId, remoteJid, role, intent, l
     params.push(campaignId);
   }
   if (remoteJid) {
-    whereClauses.push('remoteJid = ?');
-    params.push(remoteJid);
+    const digits = remoteJid.replace(/[^0-9]/g, '');
+    if (digits) {
+      whereClauses.push('(remoteJid = ? OR remoteJid LIKE ?)');
+      params.push(remoteJid, `%${digits}%`);
+    } else {
+      whereClauses.push('remoteJid = ?');
+      params.push(remoteJid);
+    }
   }
   if (role) {
     whereClauses.push('senderRole = ?');
@@ -1055,12 +1061,14 @@ export function getLeadMessages({ leadId, campaignId, remoteJid, role, intent, l
 
   const total = db.prepare(`SELECT COUNT(*) as count FROM lead_messages ${whereSql}`).get(...params).count;
 
+  const sortDirection = String(order).toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
   const rows = db.prepare(`
     SELECT m.*, l.gymName, l.city, l.country
     FROM lead_messages m
     LEFT JOIN leads l ON m.leadId = l.id
     ${whereSql}
-    ORDER BY m.id DESC
+    ORDER BY m.id ${sortDirection}
     LIMIT ? OFFSET ?
   `).all(...params, limit, offset);
 
@@ -2577,4 +2585,5 @@ Object.assign(db, {
 seedKnowledgeBaseIfEmpty();
 initAgentMonitoringIfEmpty();
 
+export { db };
 export default db;

@@ -192,7 +192,20 @@ function matchCategoryFallback(text) {
   if (lower.includes('ready to buy') || lower.includes('buy') || lower.includes('purchase') || lower.includes('sign up') || lower.includes('contract') || lower.includes('start subscription')) {
     return 'Interested in purchasing';
   }
-  if (lower.includes('price') || lower.includes('cost') || lower.includes('expensive') || lower.includes('discount') || lower.includes('quote') || lower.includes('charge')) {
+  if (
+    lower.includes('price') ||
+    lower.includes('pricing') ||
+    lower.includes('cost') ||
+    lower.includes('expensive') ||
+    lower.includes('discount') ||
+    lower.includes('quote') ||
+    lower.includes('charge') ||
+    lower.includes('fee') ||
+    lower.includes('fees') ||
+    lower.includes('how much') ||
+    lower.includes('rates') ||
+    lower.includes('rate')
+  ) {
     return 'Pricing concern';
   }
   if (lower.includes('partner') || lower.includes('next week') || lower.includes('later') || lower.includes('busy') || lower.includes('think about it') || lower.includes('time')) {

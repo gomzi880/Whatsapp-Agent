@@ -740,13 +740,14 @@ app.post('/api/outreach/test', async (req, res) => {
 // 32. View Live Message Logs (Sent, Replies, Opt-outs)
 app.get('/api/outreach/messages', (req, res) => {
   try {
-    const { leadId, campaignId, remoteJid, role, intent, limit = 50, offset = 0 } = req.query;
+    const { leadId, campaignId, remoteJid, role, intent, order = 'desc', limit = 50, offset = 0 } = req.query;
     const result = getLeadMessages({
       leadId: leadId ? parseInt(leadId, 10) : null,
       campaignId: campaignId ? parseInt(campaignId, 10) : null,
       remoteJid,
       role,
       intent,
+      order,
       limit: parseInt(limit, 10),
       offset: parseInt(offset, 10)
     });

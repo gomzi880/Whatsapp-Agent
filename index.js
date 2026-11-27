@@ -273,6 +273,21 @@ async function startWhatsAppBot() {
           continue;
         }
         // Don't auto-reply to messages you sent yourself
+        // If sent manually from operator's phone to a contact (not a bot command), log it for timeline completeness
+        if (!isGroup && !remoteJid.endsWith('@broadcast') && !text.startsWith('#')) {
+          try {
+            const lead = findLeadByPhoneOrJid(remoteJid);
+            recordLeadMessage({
+              leadId: lead ? lead.id : null,
+              campaignId: null,
+              remoteJid,
+              senderRole: 'agent',
+              messageText: text,
+              status: 'sent',
+              intent: 'manual_operator_reply'
+            });
+          } catch (e) {}
+        }
         continue;
       }
 
@@ -285,6 +300,16 @@ async function startWhatsAppBot() {
       // Check if chat is currently in Human Takeover mode
       if (takeoverChats.has(remoteJid)) {
         console.log(`✋ Skipped incoming message from ${remoteJid} (Human Takeover is Active)`);
+        try {
+          recordLeadMessage({
+            leadId: null,
+            remoteJid,
+            senderRole: 'prospect',
+            messageText: text,
+            status: 'received',
+            intent: 'human_takeover'
+          });
+        } catch (e) {}
         continue;
       }
 
